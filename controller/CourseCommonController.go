@@ -45,14 +45,11 @@ func (ctl CourseCommonController) CreateCourse(c *gin.Context) {
 	}
 
 	// response
-	// TODO: [bug] wrong response type
-	c.JSON(http.StatusOK, vo.GetCourseResponse{
-		Code: 0,
-		Data: vo.TCourse{
-			CourseID:  strconv.FormatInt(course.Id, 10),
-			Name:      course.Name,
-			TeacherID: strconv.FormatInt(course.TeacherId, 10),
-		},
+	c.JSON(http.StatusOK, vo.CreateCourseResponse{
+		Code: vo.OK,
+		Data: struct {
+			CourseID string
+		}{CourseID: strconv.FormatInt(course.Id, 10)},
 	})
 
 }
