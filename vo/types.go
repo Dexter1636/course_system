@@ -109,8 +109,8 @@ type GetMemberListResponse struct {
 // 更新成员信息
 
 type UpdateMemberRequest struct {
-	UserID   string
-	Nickname string
+	UserID   string `json:"userid"`
+	Nickname string `json:"nickname"`
 }
 
 type UpdateMemberResponse struct {
