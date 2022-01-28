@@ -12,11 +12,12 @@ func RegisterRouter(r *gin.Engine) {
 	g.GET("/ping", controller.Ping)
 
 	// 成员管理
-	g.POST("/member/create")
-	g.GET("/member")
-	g.GET("/member/list")
-	g.POST("/member/update")
-	g.POST("/member/delete")
+	uc := controller.NewUserController()
+	g.POST("/member/create", uc.Create)
+	g.GET("/member", uc.Member)
+	g.GET("/member/list", uc.List)
+	g.POST("/member/update", uc.Update)
+	g.POST("/member/delete", uc.Delete)
 
 	// 登录
 	ac := controller.NewAuthController()
