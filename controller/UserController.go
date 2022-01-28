@@ -40,6 +40,35 @@ func (ctl UserController) List(c *gin.Context) {
 }
 
 func (ctl UserController) Update(c *gin.Context) {
+	var req vo.UpdateMemberRequest
+
+	if err := c.ShouldBindJSON(&req); err != nil {
+		panic(err.Error())
+	}
+
+	var user model.User
+	//检查用户不存在
+	if err := ctl.DB.Where("user_name = ?", req.UserID).Take(&user).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			c.JSON(http.StatusOK, vo.UpdateMemberResponse{Code: vo.UserNotExisted})
+			return
+		} else {
+			panic(err.Error())
+		}
+	}
+
+	//检查用户已删除
+	if(user.Enabled == 0){
+		c.JSON(http.StatusOK, vo.UpdateMemberResponse{Code: vo.UserHasDeleted})
+		return
+	}
+
+	//修改用户名
+	if err := ctl.DB.Model(&user).Where("user_name = ?", req.UserID).Update("nick_name",req.Nickname).Error; err != nil {
+		panic(err.Error())
+	}
+
+	c.JSON(http.StatusOK,vo.DeleteMemberResponse{Code: vo.OK})
 
 }
 
@@ -54,7 +83,7 @@ func (ctl UserController) Delete(c *gin.Context) {
 	//检查用户不存在
 	if err := ctl.DB.Where("user_name = ?", req.UserID).Take(&user).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			c.JSON(http.StatusOK, vo.DeleteMemberResponse{Code: vo.CourseNotExisted})
+			c.JSON(http.StatusOK, vo.DeleteMemberResponse{Code: vo.UserNotExisted})
 			return
 		} else {
 			panic(err.Error())
