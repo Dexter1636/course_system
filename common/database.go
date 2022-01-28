@@ -5,6 +5,7 @@ import (
 	"github.com/spf13/viper"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
+	"gorm.io/gorm/logger"
 )
 
 var DB *gorm.DB
@@ -18,10 +19,16 @@ func InitDb() *gorm.DB {
 	username := viper.GetString("datasource.username")
 	password := viper.GetString("datasource.password")
 	charset := viper.GetString("datasource.charset")
+	loggerLevel := viper.GetString("logger.level")
 	dsn := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?charset=%s&parseTime=true",
 		username, password, host, port, database, charset)
+	// config
+	config := &gorm.Config{}
+	if loggerLevel == "info" {
+		config.Logger = logger.Default.LogMode(logger.Info)
+	}
 	// Get a database handle.
-	db, err := gorm.Open(mysql.Open(dsn), &gorm.Config{})
+	db, err := gorm.Open(mysql.Open(dsn), config)
 	if err != nil {
 		panic("failed to connect to database, err: " + err.Error())
 	}
