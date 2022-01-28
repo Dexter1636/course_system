@@ -19,7 +19,7 @@ This is the project of Group 28 for ByteCamp 2022 Winter.
 
 3. Add application config file.
     
-    Write the following code to course_system/config/application.yaml:
+    Write the following code to `course_system/config/application.yaml`:
     
     ```yaml
     server:
