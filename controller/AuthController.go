@@ -22,7 +22,7 @@ func NewAuthController() IAuthController {
 }
 
 func (ctl AuthController) Login(c *gin.Context) {
-
+//test 220128
 }
 
 func (ctl AuthController) Logout(c *gin.Context) {
