@@ -2,8 +2,14 @@ package controller
 
 import (
 	"course_system/common"
+	"course_system/model"
+	"course_system/vo"
+	"errors"
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
+	"net/http"
+	"regexp"
+	"strconv"
 )
 
 type IUserController interface {
@@ -26,11 +32,25 @@ func NewUserController() IUserController {
 func (ctl UserController) Create(c *gin.Context) {
 	var req vo.CreateMemberRequest
 
-	if err := c.ShouldBindJSON(&req); err != nil {
-		panic(err.Error())
-	}
-
+	//if err := c.ShouldBindJSON(&req); err != nil {
+	//	panic(err.Error())
+	//}
+	req = vo.CreateMemberRequest{Nickname: "alex", UserType: 1,
+		Username: "11111111", Password: "12345678"}
 	var user model.User
+
+	//参数校验
+	rp, _ := regexp.MatchString("^([0-9]|[a-z]|[A-Z])*$", req.Password)
+	ru, _ := regexp.MatchString("^([a-z]|[A-Z])*$", req.Username)
+
+	if (len(req.Password) > 20 || len(req.Password) < 4) ||
+		(len(req.Nickname) < 4 || len(req.Nickname) > 20 || !rp) ||
+		(len(req.Username) < 8 || len(req.Username) > 20 || !ru) {
+		c.JSON(http.StatusOK, vo.CreateMemberResponse{
+			Code: vo.ParamInvalid,
+		})
+		return
+	}
 
 	if err := ctl.DB.Where("user_name= ?", req.Username).Take(&user).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -51,6 +71,28 @@ func (ctl UserController) Member(c *gin.Context) {
 	if err := c.ShouldBindJSON(&req); err != nil {
 		panic(err.Error())
 	}
+
+	var user model.User
+
+	//检查用户不存在
+	if err := ctl.DB.Where("uuid = ?", req.UserID).Take(&user).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			c.JSON(http.StatusOK, vo.GetMemberResponse{Code: vo.UserNotExisted})
+			return
+		} else {
+			panic(err.Error())
+		}
+	}
+
+	//检查用户已删除
+	if user.Enabled == 0 {
+		c.JSON(http.StatusOK, vo.GetMemberResponse{Code: vo.UserHasDeleted})
+		return
+	}
+	RoleID, _ := strconv.Atoi(user.RoleId)
+	c.JSON(http.StatusOK, vo.GetMemberResponse{Code: vo.OK,
+		Data: vo.TMember{UserID: string(user.Uuid), Nickname: user.NickName, Username: user.UserName, UserType: vo.UserType(RoleID)}})
+	return
 }
 
 func (ctl UserController) List(c *gin.Context) {
@@ -59,6 +101,7 @@ func (ctl UserController) List(c *gin.Context) {
 	if err := c.ShouldBindJSON(&req); err != nil {
 		panic(err.Error())
 	}
+
 }
 
 func (ctl UserController) Update(c *gin.Context) {
