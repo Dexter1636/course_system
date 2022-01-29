@@ -6,6 +6,7 @@ import (
 	"course_system/vo"
 	"errors"
 	"github.com/gin-gonic/gin"
+	"github.com/go-sql-driver/mysql"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 	"log"
@@ -59,6 +60,9 @@ func (ctl CourseBookingController) BookCourse(c *gin.Context) {
 		course := model.Course{Id: courseId}
 		if err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).Select("avail").First(&course, courseId).Error; err != nil {
 			log.Println(err.Error())
+			if errors.Is(err, gorm.ErrRecordNotFound) {
+				code = vo.CourseNotExisted
+			}
 			return err
 		}
 		if course.Avail <= 0 {
@@ -78,6 +82,10 @@ func (ctl CourseBookingController) BookCourse(c *gin.Context) {
 		}
 		if err := tx.Create(&sc).Error; err != nil {
 			log.Println(err.Error())
+			var mysqlErr *mysql.MySQLError
+			if errors.As(err, &mysqlErr) && mysqlErr.Number == 1062 {
+				code = vo.StudentHasNoCourse
+			}
 			return err
 		}
 		return nil
