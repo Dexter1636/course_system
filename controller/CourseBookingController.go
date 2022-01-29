@@ -29,6 +29,7 @@ func NewCourseBookingController() ICourseBookingController {
 }
 
 func (ctl CourseBookingController) BookCourse(c *gin.Context) {
+	// TODO: validate studentId
 	var req vo.BookCourseRequest
 	code := vo.OK
 
@@ -96,6 +97,7 @@ func (ctl CourseBookingController) BookCourse(c *gin.Context) {
 }
 
 func (ctl CourseBookingController) GetStudentCourse(c *gin.Context) {
+	// TODO: validate studentId
 	//TODO implement me
 	panic("implement me")
 }
