@@ -58,7 +58,7 @@ func (ctl CourseBookingController) BookCourse(c *gin.Context) {
 		// check avail
 		course := model.Course{Id: courseId}
 		if err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).Select("avail").First(&course, courseId).Error; err != nil {
-			log.Println(err)
+			log.Println(err.Error())
 			return err
 		}
 		if course.Avail <= 0 {
@@ -68,7 +68,7 @@ func (ctl CourseBookingController) BookCourse(c *gin.Context) {
 		// update avail
 		course.Avail--
 		if err := tx.Model(&course).Update("avail", course.Avail).Error; err != nil {
-			log.Println(err)
+			log.Println(err.Error())
 			return err
 		}
 		// create sc record
@@ -77,6 +77,7 @@ func (ctl CourseBookingController) BookCourse(c *gin.Context) {
 			CourseId:  courseId,
 		}
 		if err := tx.Create(&sc).Error; err != nil {
+			log.Println(err.Error())
 			return err
 		}
 		return nil
