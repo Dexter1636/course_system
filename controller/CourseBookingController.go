@@ -32,7 +32,7 @@ func (ctl CourseBookingController) BookCourse(c *gin.Context) {
 	code := vo.OK
 
 	// response
-	defer c.JSON(http.StatusOK, vo.BookCourseResponse{Code: code})
+	defer func() { c.JSON(http.StatusOK, vo.BookCourseResponse{Code: code}) }()
 
 	// validate data
 	if err := c.ShouldBindJSON(&req); err != nil {
