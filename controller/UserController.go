@@ -32,11 +32,11 @@ func NewUserController() IUserController {
 func (ctl UserController) Create(c *gin.Context) {
 	var req vo.CreateMemberRequest
 
-	//if err := c.ShouldBindJSON(&req); err != nil {
-	//	panic(err.Error())
-	//}
-	req = vo.CreateMemberRequest{Nickname: "alex", UserType: 1,
-		Username: "11111111", Password: "12345678"}
+	if err := c.ShouldBindJSON(&req); err != nil {
+		panic(err.Error())
+	}
+	//req = vo.CreateMemberRequest{Nickname: "alex", UserType: 1,
+	//	Username: "alexander", Password: "12345678"}
 	var user model.User
 
 	//参数校验
@@ -52,16 +52,21 @@ func (ctl UserController) Create(c *gin.Context) {
 		return
 	}
 
-	if err := ctl.DB.Where("user_name= ?", req.Username).Take(&user).Error; err != nil {
+	if err := ctl.DB.First("user_name = ?", req.Username).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			u := &model.User{Uuid: 0, UserName: req.Username, NickName: req.Nickname,
-				Password: req.Password, RoleId: string(req.UserType), Enabled: 1}
-			if err := ctl.DB.Create(u).Error; err != nil {
-				panic(err.Error())
-			}
+			ctl.DB.Create(&user)
+			c.JSON(http.StatusOK, vo.CreateMemberResponse{
+				Code: vo.OK,
+				Data: struct{ UserID string }{UserID: string(user.Uuid)},
+			})
 		} else {
-			panic(err.Error())
+			c.JSON(http.StatusOK, vo.CreateMemberResponse{
+				Code: vo.UserHasExisted,
+			})
+			return
 		}
+	} else {
+		panic(err.Error())
 	}
 }
 
@@ -89,6 +94,8 @@ func (ctl UserController) Member(c *gin.Context) {
 		c.JSON(http.StatusOK, vo.GetMemberResponse{Code: vo.UserHasDeleted})
 		return
 	}
+
+	//返回TMember
 	RoleID, _ := strconv.Atoi(user.RoleId)
 	c.JSON(http.StatusOK, vo.GetMemberResponse{Code: vo.OK,
 		Data: vo.TMember{UserID: string(user.Uuid), Nickname: user.NickName, Username: user.UserName, UserType: vo.UserType(RoleID)}})
