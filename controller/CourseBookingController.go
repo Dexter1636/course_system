@@ -29,8 +29,12 @@ func (ctl CourseBookingController) BookCourse(c *gin.Context) {
 		panic(err.Error())
 	}
 
-	// book course
+	// book course (v1: select for update)
+	// 1. check avail
+	// 2. delete avail
+	// 3. create sc record
 
+	// response
 }
 
 func (ctl CourseBookingController) GetCourseList(c *gin.Context) {
