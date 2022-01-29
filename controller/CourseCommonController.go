@@ -36,8 +36,9 @@ func (ctl CourseCommonController) CreateCourse(c *gin.Context) {
 
 	// create course
 	course := model.Course{
-		Name: req.Name,
-		Cap:  req.Cap,
+		Name:  req.Name,
+		Cap:   req.Cap,
+		Avail: req.Cap,
 	}
 
 	if err := ctl.DB.Create(&course).Error; err != nil {

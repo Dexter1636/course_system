@@ -109,8 +109,8 @@ type GetMemberListResponse struct {
 // 更新成员信息
 
 type UpdateMemberRequest struct {
-	UserID   string `json:"userid"`
-	Nickname string `json:"nickname"`
+	UserID   string
+	Nickname string
 }
 
 type UpdateMemberResponse struct {
@@ -121,7 +121,7 @@ type UpdateMemberResponse struct {
 // 成员删除后，该成员不能够被登录且不应该不可见，ID 不可复用
 
 type DeleteMemberRequest struct {
-	UserID string `json:"userid"`
+	UserID string
 }
 
 type DeleteMemberResponse struct {
