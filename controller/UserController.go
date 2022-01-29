@@ -118,9 +118,15 @@ func (ctl UserController) Update(c *gin.Context) {
 		panic(err.Error())
 	}
 
+	//检查数据合法性
+	if len(req.Nickname) < 4 || len(req.Nickname) > 20 {
+		c.JSON(http.StatusOK, vo.UpdateMemberResponse{Code: vo.ParamInvalid})
+		return
+	}
+
 	var user model.User
 	//检查用户不存在
-	if err := ctl.DB.Where("uuid = ?", req.UserID).Take(&user).Error; err != nil {
+	if err := ctl.DB.Take(&user, req.UserID).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			c.JSON(http.StatusOK, vo.UpdateMemberResponse{Code: vo.UserNotExisted})
 			return
@@ -136,11 +142,11 @@ func (ctl UserController) Update(c *gin.Context) {
 	}
 
 	//修改用户名
-	if err := ctl.DB.Model(&user).Where("uuid = ?", req.UserID).Update("nick_name", req.Nickname).Error; err != nil {
+	if err := ctl.DB.Model(&user).Update("nick_name", req.Nickname).Error; err != nil {
 		panic(err.Error())
 	}
 
-	c.JSON(http.StatusOK, vo.DeleteMemberResponse{Code: vo.OK})
+	c.JSON(http.StatusOK, vo.UpdateMemberResponse{Code: vo.OK})
 
 }
 
@@ -153,7 +159,7 @@ func (ctl UserController) Delete(c *gin.Context) {
 
 	var user model.User
 	//检查用户不存在
-	if err := ctl.DB.Where("uuid = ?", req.UserID).Take(&user).Error; err != nil {
+	if err := ctl.DB.Take(&user, req.UserID).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			c.JSON(http.StatusOK, vo.DeleteMemberResponse{Code: vo.UserNotExisted})
 			return
@@ -169,7 +175,7 @@ func (ctl UserController) Delete(c *gin.Context) {
 	}
 
 	//删除用户
-	if err := ctl.DB.Model(&user).Where("uuid = ?", req.UserID).Update("enabled", "0").Error; err != nil {
+	if err := ctl.DB.Model(&user).Update("enabled", "0").Error; err != nil {
 		panic(err.Error())
 	}
 
