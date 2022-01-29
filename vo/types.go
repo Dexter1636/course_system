@@ -174,8 +174,8 @@ type WhoAmIResponse struct {
 // 创建课程
 // Method: Post
 type CreateCourseRequest struct {
-	Name string `json:"name"`
-	Cap  int    `json:"cap"`
+	Name string
+	Cap  int
 }
 
 type CreateCourseResponse struct {
