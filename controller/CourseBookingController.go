@@ -5,6 +5,7 @@ import (
 	"course_system/vo"
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
+	"net/http"
 )
 
 type ICourseBookingController interface {
@@ -35,6 +36,7 @@ func (ctl CourseBookingController) BookCourse(c *gin.Context) {
 	// 3. create sc record
 
 	// response
+	c.JSON(http.StatusOK, vo.BookCourseResponse{Code: vo.OK})
 }
 
 func (ctl CourseBookingController) GetCourseList(c *gin.Context) {
