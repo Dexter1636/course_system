@@ -6,3 +6,7 @@ type Course struct {
 	Cap       int
 	TeacherId int64
 }
+
+func (Course) TableName() string {
+	return "course"
+}
