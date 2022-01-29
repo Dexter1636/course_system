@@ -38,6 +38,6 @@ func RegisterRouter(r *gin.Engine) {
 	// 抢课
 	cbc := controller.NewCourseBookingController()
 	g.POST("/student/book_course", cbc.BookCourse)
-	g.GET("/student/course", cbc.GetCourseList)
+	g.GET("/student/course", cbc.GetStudentCourse)
 
 }

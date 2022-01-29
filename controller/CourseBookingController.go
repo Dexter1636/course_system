@@ -10,7 +10,7 @@ import (
 
 type ICourseBookingController interface {
 	BookCourse(c *gin.Context)
-	GetCourseList(c *gin.Context)
+	GetStudentCourse(c *gin.Context)
 }
 
 type CourseBookingController struct {
@@ -39,7 +39,7 @@ func (ctl CourseBookingController) BookCourse(c *gin.Context) {
 	c.JSON(http.StatusOK, vo.BookCourseResponse{Code: vo.OK})
 }
 
-func (ctl CourseBookingController) GetCourseList(c *gin.Context) {
+func (ctl CourseBookingController) GetStudentCourse(c *gin.Context) {
 	//TODO implement me
 	panic("implement me")
 }
