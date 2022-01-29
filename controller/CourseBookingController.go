@@ -2,9 +2,12 @@ package controller
 
 import (
 	"course_system/common"
+	"course_system/model"
 	"course_system/vo"
+	"errors"
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 	"net/http"
 )
 
@@ -34,6 +37,22 @@ func (ctl CourseBookingController) BookCourse(c *gin.Context) {
 	// 1. check avail
 	// 2. delete avail
 	// 3. create sc record
+	err := ctl.DB.Transaction(func(tx *gorm.DB) error {
+		var course model.Course
+		if err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).Select("avail").First(&course, req.CourseID); err != nil {
+			return errors.New("")
+		}
+		//if course <= 0 {
+		//	return errors.New("")
+		//}
+		if err := tx.Model(&course).Updates("avail"); err != nil {
+			return errors.New("")
+		}
+		return nil
+	})
+	if err != nil {
+		return
+	}
 
 	// response
 	c.JSON(http.StatusOK, vo.BookCourseResponse{Code: vo.OK})
