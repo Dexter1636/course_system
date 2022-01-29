@@ -98,6 +98,26 @@ func (ctl CourseBookingController) BookCourse(c *gin.Context) {
 
 func (ctl CourseBookingController) GetStudentCourse(c *gin.Context) {
 	// TODO: validate studentId
-	//TODO implement me
-	panic("implement me")
+	var req vo.GetStudentCourseRequest
+	code := vo.OK
+	courseList := make([]vo.TCourse, 0, 8)
+
+	// response
+	defer func() {
+		c.JSON(http.StatusOK, vo.GetStudentCourseResponse{
+			Code: code,
+			Data: struct {
+				CourseList []vo.TCourse
+			}{courseList},
+		})
+	}()
+
+	// validate data
+	if err := c.ShouldBindJSON(&req); err != nil {
+		code = vo.ParamInvalid
+		return
+	}
+
+	// get course
+	// TODO: get course
 }
