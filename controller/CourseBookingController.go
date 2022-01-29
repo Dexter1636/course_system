@@ -66,6 +66,7 @@ func (ctl CourseBookingController) BookCourse(c *gin.Context) {
 			return errors.New("CourseNotAvailable")
 		}
 		// update avail
+		course.Avail--
 		if err := tx.Model(&course).Update("avail", course.Avail).Error; err != nil {
 			log.Println(err)
 			return err
