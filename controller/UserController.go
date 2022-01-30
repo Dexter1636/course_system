@@ -8,6 +8,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
 	"net/http"
+	"strconv"
 )
 
 type IUserController interface {
@@ -36,7 +37,41 @@ func (ctl UserController) Member(c *gin.Context) {
 }
 
 func (ctl UserController) List(c *gin.Context) {
+	var req vo.GetMemberListRequest
 
+	if err := c.ShouldBindJSON(&req); err != nil {
+		panic(err.Error())
+	}
+
+	//查询数据库
+	var users []model.User
+	if err := ctl.DB.Offset(req.Offset).Limit(req.Limit).Find(&users).Error; err != nil {
+		panic(err.Error())
+	}
+
+	//获取数据
+	var MemberList []vo.TMember
+	for i := 0; i < len(users); i++ {
+		UserType, err := strconv.Atoi(users[i].RoleId)
+		if err != nil{
+			panic(err.Error())
+		}
+		MemberList = append(MemberList, vo.TMember{
+			strconv.FormatInt(users[i].Uuid, 10), users[i].NickName, users[i].UserName, vo.UserType(UserType)})
+	}
+
+	//防止返回NULL
+	if len(MemberList) == 0 {
+		MemberList = make([]vo.TMember, 0)
+	}
+
+	//返回参数
+	c.JSON(http.StatusOK,vo.GetMemberListResponse{
+		Code: vo.OK,
+		Data: struct {
+			MemberList []vo.TMember
+		}{MemberList: MemberList},
+	})
 }
 
 func (ctl UserController) Update(c *gin.Context) {
