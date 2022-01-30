@@ -3,6 +3,7 @@ package controller
 import (
 	"course_system/common"
 	"course_system/model"
+	"course_system/repository"
 	"course_system/vo"
 	"errors"
 	"github.com/gin-gonic/gin"
@@ -20,12 +21,15 @@ type ICourseBookingController interface {
 }
 
 type CourseBookingController struct {
-	DB *gorm.DB
+	repo repository.ICourseRepository
+	DB   *gorm.DB
 }
 
 func NewCourseBookingController() ICourseBookingController {
-	db := common.GetDB()
-	return CourseBookingController{DB: db}
+	return CourseBookingController{
+		repo: repository.NewCourseRepository(),
+		DB:   common.GetDB(),
+	}
 }
 
 func (ctl CourseBookingController) BookCourse(c *gin.Context) {
@@ -85,6 +89,7 @@ func (ctl CourseBookingController) BookCourse(c *gin.Context) {
 			log.Println(err.Error())
 			var mysqlErr *mysql.MySQLError
 			if errors.As(err, &mysqlErr) && mysqlErr.Number == 1062 {
+				// TODO: wrong return code
 				code = vo.StudentHasNoCourse
 			}
 			return err
@@ -100,7 +105,8 @@ func (ctl CourseBookingController) GetStudentCourse(c *gin.Context) {
 	// TODO: validate studentId
 	var req vo.GetStudentCourseRequest
 	code := vo.OK
-	courseList := make([]vo.TCourse, 0, 8)
+	courseList := make([]model.Course, 0, 8)
+	tCourseList := make([]vo.TCourse, 0, 8)
 
 	// response
 	defer func() {
@@ -108,7 +114,7 @@ func (ctl CourseBookingController) GetStudentCourse(c *gin.Context) {
 			Code: code,
 			Data: struct {
 				CourseList []vo.TCourse
-			}{courseList},
+			}{tCourseList},
 		})
 	}()
 
@@ -117,7 +123,21 @@ func (ctl CourseBookingController) GetStudentCourse(c *gin.Context) {
 		code = vo.ParamInvalid
 		return
 	}
+	studentId, err := strconv.ParseInt(req.StudentID, 10, 64)
+	if err != nil {
+		code = vo.ParamInvalid
+		return
+	}
 
 	// get course
-	// TODO: get course
+	code = ctl.repo.GetCourseListByStudentId(studentId, &courseList)
+
+	// convert query result to response type
+	for _, course := range courseList {
+		tCourseList = append(tCourseList, vo.TCourse{
+			CourseID:  strconv.FormatInt(course.Id, 10),
+			Name:      course.Name,
+			TeacherID: strconv.FormatInt(course.TeacherId, 10),
+		})
+	}
 }
