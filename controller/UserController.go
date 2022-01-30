@@ -40,12 +40,17 @@ func (ctl UserController) Create(c *gin.Context) {
 	var user model.User
 
 	//参数校验
-	rp, _ := regexp.MatchString("^([0-9]|[a-z]|[A-Z])*$", req.Password)
+	tmpStr := req.Password
+	r1, _ := regexp.MatchString("^(\\w*[0-9]+\\w*[a-z]+\\w*[A-Z]+)|(\\w*[0-9]+\\w*[A-Z]+\\w*[a-z]+)$", tmpStr)
+	r2, _ := regexp.MatchString("^(\\w*[a-z]+\\w*[0-9]+\\w*[A-Z]+)|(\\w*[a-z]+\\w*[A-Z]+\\w*[0-9]+)$", tmpStr)
+	r3, _ := regexp.MatchString("^(\\w*[A-Z]+\\w*[a-z]+\\w*[0-9]+)|(\\w*[A-Z]+\\w*[0-9]+\\w*[a-z]+)$", tmpStr)
 	ru, _ := regexp.MatchString("^([a-z]|[A-Z])*$", req.Username)
+	rp := r1 || r2 || r3
 
-	if (len(req.Password) > 20 || len(req.Password) < 4) ||
-		(len(req.Nickname) < 4 || len(req.Nickname) > 20 || !rp) ||
-		(len(req.Username) < 8 || len(req.Username) > 20 || !ru) {
+	if (len(req.Password) > 20 || len(req.Password) < 8 || !rp) ||
+		(len(req.Nickname) < 4 || len(req.Nickname) > 20) ||
+		(len(req.Username) < 8 || len(req.Username) > 20 || !ru) ||
+		(req.UserType > 3 || req.UserType < 1) {
 		c.JSON(http.StatusOK, vo.CreateMemberResponse{
 			Code: vo.ParamInvalid,
 		})
