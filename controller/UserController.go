@@ -8,6 +8,10 @@ import (
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
 	"net/http"
+<<<<<<< HEAD
+=======
+	"regexp"
+>>>>>>> dev
 	"strconv"
 )
 
@@ -29,16 +33,86 @@ func NewUserController() IUserController {
 }
 
 func (ctl UserController) Create(c *gin.Context) {
+	var req vo.CreateMemberRequest
 
+	if err := c.ShouldBindJSON(&req); err != nil {
+		panic(err.Error())
+	}
+	//req = vo.CreateMemberRequest{Nickname: "alex", UserType: 1,
+	//	Username: "alexander", Password: "12345678"}
+	var user model.User
+
+	//参数校验
+	tmpStr := req.Password
+	r1, _ := regexp.MatchString("^(\\w*[0-9]+\\w*[a-z]+\\w*[A-Z]+)|(\\w*[0-9]+\\w*[A-Z]+\\w*[a-z]+)$", tmpStr)
+	r2, _ := regexp.MatchString("^(\\w*[a-z]+\\w*[0-9]+\\w*[A-Z]+)|(\\w*[a-z]+\\w*[A-Z]+\\w*[0-9]+)$", tmpStr)
+	r3, _ := regexp.MatchString("^(\\w*[A-Z]+\\w*[a-z]+\\w*[0-9]+)|(\\w*[A-Z]+\\w*[0-9]+\\w*[a-z]+)$", tmpStr)
+	ru, _ := regexp.MatchString("^([a-z]|[A-Z])*$", req.Username)
+	rp := r1 || r2 || r3
+
+	if (len(req.Password) > 20 || len(req.Password) < 8 || !rp) ||
+		(len(req.Nickname) < 4 || len(req.Nickname) > 20) ||
+		(len(req.Username) < 8 || len(req.Username) > 20 || !ru) ||
+		(req.UserType > 3 || req.UserType < 1) {
+		c.JSON(http.StatusOK, vo.CreateMemberResponse{
+			Code: vo.ParamInvalid,
+		})
+		return
+	}
+
+	if err := ctl.DB.First("user_name = ?", req.Username).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			ctl.DB.Create(&user)
+			c.JSON(http.StatusOK, vo.CreateMemberResponse{
+				Code: vo.OK,
+				Data: struct{ UserID string }{UserID: string(user.Uuid)},
+			})
+		} else {
+			c.JSON(http.StatusOK, vo.CreateMemberResponse{
+				Code: vo.UserHasExisted,
+			})
+			return
+		}
+	} else {
+		panic(err.Error())
+	}
 }
 
 func (ctl UserController) Member(c *gin.Context) {
+	var req vo.GetMemberRequest
 
+	if err := c.ShouldBindJSON(&req); err != nil {
+		panic(err.Error())
+	}
+
+	var user model.User
+
+	//检查用户不存在
+	if err := ctl.DB.Where("uuid = ?", req.UserID).Take(&user).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			c.JSON(http.StatusOK, vo.GetMemberResponse{Code: vo.UserNotExisted})
+			return
+		} else {
+			panic(err.Error())
+		}
+	}
+
+	//检查用户已删除
+	if user.Enabled == 0 {
+		c.JSON(http.StatusOK, vo.GetMemberResponse{Code: vo.UserHasDeleted})
+		return
+	}
+
+	//返回TMember
+	RoleID, _ := strconv.Atoi(user.RoleId)
+	c.JSON(http.StatusOK, vo.GetMemberResponse{Code: vo.OK,
+		Data: vo.TMember{UserID: string(user.Uuid), Nickname: user.NickName, Username: user.UserName, UserType: vo.UserType(RoleID)}})
+	return
 }
 
 func (ctl UserController) List(c *gin.Context) {
 	var req vo.GetMemberListRequest
-
+	
 	if err := c.ShouldBindJSON(&req); err != nil {
 		panic(err.Error())
 	}
@@ -89,7 +163,7 @@ func (ctl UserController) Update(c *gin.Context) {
 
 	var user model.User
 	//检查用户不存在
-	if err := ctl.DB.Take(&user,req.UserID).Error; err != nil {
+	if err := ctl.DB.Take(&user, req.UserID).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			c.JSON(http.StatusOK, vo.UpdateMemberResponse{Code: vo.UserNotExisted})
 			return
@@ -99,17 +173,17 @@ func (ctl UserController) Update(c *gin.Context) {
 	}
 
 	//检查用户已删除
-	if(user.Enabled == 0){
+	if user.Enabled == 0 {
 		c.JSON(http.StatusOK, vo.UpdateMemberResponse{Code: vo.UserHasDeleted})
 		return
 	}
 
 	//修改用户名
-	if err := ctl.DB.Model(&user).Update("nick_name",req.Nickname).Error; err != nil {
+	if err := ctl.DB.Model(&user).Update("nick_name", req.Nickname).Error; err != nil {
 		panic(err.Error())
 	}
 
-	c.JSON(http.StatusOK,vo.UpdateMemberResponse{Code: vo.OK})
+	c.JSON(http.StatusOK, vo.UpdateMemberResponse{Code: vo.OK})
 
 }
 
@@ -122,7 +196,7 @@ func (ctl UserController) Delete(c *gin.Context) {
 
 	var user model.User
 	//检查用户不存在
-	if err := ctl.DB.Take(&user,req.UserID)	.Error; err != nil {
+	if err := ctl.DB.Take(&user, req.UserID).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			c.JSON(http.StatusOK, vo.DeleteMemberResponse{Code: vo.UserNotExisted})
 			return
@@ -132,16 +206,16 @@ func (ctl UserController) Delete(c *gin.Context) {
 	}
 
 	//检查用户已删除
-	if(user.Enabled == 0){
+	if user.Enabled == 0 {
 		c.JSON(http.StatusOK, vo.DeleteMemberResponse{Code: vo.UserHasDeleted})
 		return
 	}
 
 	//删除用户
-	if err := ctl.DB.Model(&user).Update("enabled","0").Error; err != nil {
+	if err := ctl.DB.Model(&user).Update("enabled", "0").Error; err != nil {
 		panic(err.Error())
 	}
 
-	c.JSON(http.StatusOK,vo.DeleteMemberResponse{Code: vo.OK})
+	c.JSON(http.StatusOK, vo.DeleteMemberResponse{Code: vo.OK})
 
 }
