@@ -88,9 +88,8 @@ func (ctl CourseBookingController) BookCourse(c *gin.Context) {
 		if err := tx.Create(&sc).Error; err != nil {
 			log.Println(err.Error())
 			var mysqlErr *mysql.MySQLError
-			if errors.As(err, &mysqlErr) && mysqlErr.Number == 1062 {
-				// TODO: wrong return code
-				code = vo.StudentHasNoCourse
+			if errors.As(err, &mysqlErr) && mysqlErr.Number == 1062 { // student already have this course
+				code = vo.StudentHasCourse
 			}
 			return err
 		}
