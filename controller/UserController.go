@@ -208,7 +208,7 @@ func (ctl UserController) Delete(c *gin.Context) {
 		return
 	}
 
-	//删除用户
+	//删除用户，将状态设置为0
 	if err := ctl.DB.Model(&user).Update("enabled", "0").Error; err != nil {
 		panic(err.Error())
 	}
