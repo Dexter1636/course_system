@@ -8,10 +8,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
 	"net/http"
-<<<<<<< HEAD
-=======
 	"regexp"
->>>>>>> dev
 	"strconv"
 )
 
@@ -112,7 +109,7 @@ func (ctl UserController) Member(c *gin.Context) {
 
 func (ctl UserController) List(c *gin.Context) {
 	var req vo.GetMemberListRequest
-	
+
 	if err := c.ShouldBindJSON(&req); err != nil {
 		panic(err.Error())
 	}
@@ -127,7 +124,7 @@ func (ctl UserController) List(c *gin.Context) {
 	var MemberList []vo.TMember
 	for i := 0; i < len(users); i++ {
 		UserType, err := strconv.Atoi(users[i].RoleId)
-		if err != nil{
+		if err != nil {
 			panic(err.Error())
 		}
 		MemberList = append(MemberList, vo.TMember{
@@ -140,7 +137,7 @@ func (ctl UserController) List(c *gin.Context) {
 	}
 
 	//返回参数
-	c.JSON(http.StatusOK,vo.GetMemberListResponse{
+	c.JSON(http.StatusOK, vo.GetMemberListResponse{
 		Code: vo.OK,
 		Data: struct {
 			MemberList []vo.TMember
