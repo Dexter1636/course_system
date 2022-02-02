@@ -52,9 +52,21 @@ func (ctl UserController) Create(c *gin.Context) {
 		return
 	}
 
-	if err := ctl.DB.First("user_name = ?", req.Username).Error; err != nil {
+	user = model.User{Uuid: 0, UserName: req.Username, NickName: req.Nickname,
+		Password: req.Password, RoleId: string(req.UserType), Enabled: 1}
+	if err := ctl.DB.Create(&user).Error; err != nil {
+		fmt.pr
+	} else {
+		panic(err.Error())
+	}
+
+	if err := ctl.DB.Where("user_name = ?", req.Username).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
+<<<<<<< Updated upstream
 			ctl.DB.Create(&user)
+=======
+
+>>>>>>> Stashed changes
 			c.JSON(http.StatusOK, vo.CreateMemberResponse{
 				Code: vo.OK,
 				Data: struct{ UserID string }{UserID: string(user.Uuid)},
@@ -97,8 +109,20 @@ func (ctl UserController) Member(c *gin.Context) {
 
 	//返回TMember
 	RoleID, _ := strconv.Atoi(user.RoleId)
+<<<<<<< Updated upstream
 	c.JSON(http.StatusOK, vo.GetMemberResponse{Code: vo.OK,
 		Data: vo.TMember{UserID: string(user.Uuid), Nickname: user.NickName, Username: user.UserName, UserType: vo.UserType(RoleID)}})
+=======
+	c.JSON(http.StatusOK, vo.GetMemberResponse{
+		Code: vo.OK,
+		Data: struct {
+			UserID   string
+			Nickname string
+			Username string
+			UserType vo.UserType
+		}{UserID: strconv.FormatInt(user.Uuid, 10), Nickname: user.NickName, Username: user.UserName, UserType: vo.UserType(RoleID)},
+	})
+>>>>>>> Stashed changes
 	return
 }
 
