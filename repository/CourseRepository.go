@@ -43,15 +43,37 @@ func (cr CourseRepository) GetCourseListByStudentId(stuId int64, courseList *[]m
 	//if err := cr.DB.Find(&courseList, subQuery).Error; err != nil {
 	//	panic(err.Error())
 	//}
-	if err := cr.DB.Raw("SELECT * FROM course WHERE id IN (SELECT course_id FROM sc WHERE student_id = ?)", stuId).Scan(&courseList).Error; err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			log.Println("repository.GetCourseListByStudentId: CourseNotExisted")
-			return vo.StudentHasNoCourse
-		} else {
-			panic(err.Error())
+	code = vo.OK
+	err := cr.DB.Transaction(func(tx *gorm.DB) error {
+		// validate student
+		var count int64
+		if err := tx.Model(&model.User{}).Where("uuid = ?", stuId).Count(&count).Error; err != nil {
+			log.Println(err.Error())
+			code = vo.UnknownError
+			return err
 		}
+		if count <= 0 {
+			log.Println("repository.GetCourseListByStudentId: StudentNotExisted")
+			code = vo.StudentNotExisted
+			return errors.New("StudentNotExisted")
+		}
+		//select course
+		if err := cr.DB.Raw("SELECT * FROM course WHERE id IN (SELECT course_id FROM sc WHERE student_id = ?)", stuId).Scan(&courseList).Error; err != nil {
+			log.Println(err.Error())
+			if errors.Is(err, gorm.ErrRecordNotFound) {
+				log.Println("repository.GetCourseListByStudentId: CourseNotExisted")
+				code = vo.StudentHasNoCourse
+			} else {
+				code = vo.UnknownError
+			}
+			return err
+		}
+		return nil
+	})
+	if err != nil {
+		log.Println(err.Error())
 	}
-	return vo.OK
+	return code
 }
 
 func (cr CourseRepository) CreateCourse(course *model.Course) (code vo.ErrNo) {

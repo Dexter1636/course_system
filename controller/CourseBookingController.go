@@ -33,7 +33,6 @@ func NewCourseBookingController() ICourseBookingController {
 }
 
 func (ctl CourseBookingController) BookCourse(c *gin.Context) {
-	// TODO: validate studentId
 	var req vo.BookCourseRequest
 	code := vo.OK
 
@@ -56,17 +55,31 @@ func (ctl CourseBookingController) BookCourse(c *gin.Context) {
 		return
 	}
 
-	// book course (v1: select for update)
-	// 1. check avail
-	// 2. update avail
-	// 3. create sc record
+	// book course (v1.1: select for update)
+	// 1. validate student
+	// 2. check course avail
+	// 3. update course avail
+	// 4. create sc record
 	err = ctl.DB.Transaction(func(tx *gorm.DB) error {
+		// validate student
+		var count int64
+		if err := tx.Model(&model.User{}).Where("uuid = ?", studentId).Count(&count).Error; err != nil {
+			log.Println(err.Error())
+			code = vo.UnknownError
+			return err
+		}
+		if count <= 0 {
+			code = vo.StudentNotExisted
+			return errors.New("StudentNotExisted")
+		}
 		// check avail
 		course := model.Course{Id: courseId}
 		if err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).Select("avail").First(&course, courseId).Error; err != nil {
 			log.Println(err.Error())
 			if errors.Is(err, gorm.ErrRecordNotFound) {
 				code = vo.CourseNotExisted
+			} else {
+				code = vo.UnknownError
 			}
 			return err
 		}
@@ -78,6 +91,7 @@ func (ctl CourseBookingController) BookCourse(c *gin.Context) {
 		course.Avail--
 		if err := tx.Model(&course).Update("avail", course.Avail).Error; err != nil {
 			log.Println(err.Error())
+			code = vo.UnknownError
 			return err
 		}
 		// create sc record
@@ -90,18 +104,20 @@ func (ctl CourseBookingController) BookCourse(c *gin.Context) {
 			var mysqlErr *mysql.MySQLError
 			if errors.As(err, &mysqlErr) && mysqlErr.Number == 1062 { // student already have this course
 				code = vo.StudentHasCourse
+			} else {
+				code = vo.UnknownError
 			}
 			return err
 		}
 		return nil
 	})
 	if err != nil {
+		log.Println(err.Error())
 		return
 	}
 }
 
 func (ctl CourseBookingController) GetStudentCourse(c *gin.Context) {
-	// TODO: validate studentId
 	var req vo.GetStudentCourseRequest
 	code := vo.OK
 	courseList := make([]model.Course, 0, 8)
