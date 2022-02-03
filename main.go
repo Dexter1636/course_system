@@ -6,7 +6,7 @@ import (
 )
 
 func main() {
-	common.InitConfig()
+	common.InitConfig("application")
 	common.InitDb()
 	r := RegisterRouter()
 	port := viper.GetString("server.port")

@@ -7,21 +7,15 @@ import (
 	"os"
 )
 
-func InitConfig() {
+func InitConfig(env string) {
 	workDir, _ := os.Getwd()
-	viper.SetConfigName("application")
+	viper.SetConfigName(env)
 	viper.SetConfigType("yaml")
 	viper.AddConfigPath(workDir + "/config")
 	if err := viper.ReadInConfig(); err != nil {
 		panic(fmt.Errorf(err.Error()))
 	}
-	viper.SetDefault("environment", "dev")
-	env := viper.GetString("environment")
 	if env == "test" {
-		viper.SetConfigName("test")
-		if err := viper.ReadInConfig(); err != nil {
-			panic(fmt.Errorf(err.Error()))
-		}
 		log.Println("========using test config========")
 	}
 }

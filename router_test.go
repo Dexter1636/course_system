@@ -22,7 +22,7 @@ var pathPrefix string
 
 // before all
 func setup() {
-	initConfig()
+	common.InitConfig("test")
 	common.InitDb()
 	router = RegisterRouter()
 	pathPrefix = "/api/v1"
