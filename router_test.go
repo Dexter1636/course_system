@@ -39,3 +39,11 @@ func TestPingRoute(t *testing.T) {
 	assert.Equal(t, 200, w.Code)
 	assert.Equal(t, "{\"message\":\"pong\"}", w.Body.String())
 }
+
+func BenchmarkPingRoute(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		w := httptest.NewRecorder()
+		req, _ := http.NewRequest("GET", pathPrefix+"/ping", nil)
+		router.ServeHTTP(w, req)
+	}
+}
