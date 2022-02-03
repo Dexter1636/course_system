@@ -6,7 +6,6 @@ import (
 	"course_system/repository"
 	"course_system/vo"
 	"github.com/gin-gonic/gin"
-	"log"
 	"net/http"
 	"strconv"
 )
@@ -72,8 +71,6 @@ func (ctl CourseCommonController) GetCourse(c *gin.Context) {
 	if err != nil {
 		code = vo.ParamInvalid
 	}
-
-	log.Println(req)
 
 	// get course
 	code = ctl.repo.GetCourseById(courseId, &course)

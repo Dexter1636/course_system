@@ -6,9 +6,11 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/gin-gonic/gin"
+	"math/rand"
 	"net/http"
 	"net/http/httptest"
 	"os"
+	"strconv"
 	"strings"
 	"testing"
 
@@ -18,13 +20,16 @@ import (
 var router *gin.Engine
 var pathPrefix string
 
+// before all
 func setup() {
 	initConfig()
 	common.InitDb()
 	router = RegisterRouter()
 	pathPrefix = "/api/v1"
+	rand.Seed(10)
 }
 
+// after all
 func teardown() {
 
 }
@@ -73,4 +78,13 @@ func TestGetCourseRoute(t *testing.T) {
 		Code: vo.CourseNotExisted,
 		Data: vo.TCourse{},
 	}, resp)
+}
+
+func BenchmarkGetCourseRoute(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		w := httptest.NewRecorder()
+		body, _ := json.Marshal(vo.GetCourseRequest{CourseID: strconv.FormatInt(rand.Int63n(15), 10)})
+		req, _ := http.NewRequest("GET", pathPrefix+"/course/get", strings.NewReader(string(body)))
+		router.ServeHTTP(w, req)
+	}
 }
