@@ -63,6 +63,28 @@ func BenchmarkPingRoute(b *testing.B) {
 
 // ======== CourseCommon ========
 
+func TestCreateCourseRoute(t *testing.T) {
+	w := httptest.NewRecorder()
+	body, _ := json.Marshal(vo.CreateCourseRequest{
+		Name: "Introduction to C++",
+		Cap:  120,
+	})
+	req, _ := http.NewRequest("POST", pathPrefix+"/course/create", strings.NewReader(string(body)))
+	router.ServeHTTP(w, req)
+
+	assert.Equal(t, 200, w.Code)
+	var resp vo.GetCourseResponse
+	if err := json.Unmarshal([]byte(w.Body.String()), &resp); err != nil {
+		panic(err.Error())
+	}
+	assert.Equal(t, vo.CreateCourseResponse{
+		Code: vo.OK,
+		Data: struct {
+			CourseID string
+		}{CourseID: "1"},
+	}, resp)
+}
+
 func TestGetCourseRoute(t *testing.T) {
 	w := httptest.NewRecorder()
 	body, _ := json.Marshal(vo.GetCourseRequest{CourseID: "1"})
