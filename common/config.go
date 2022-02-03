@@ -22,6 +22,6 @@ func InitConfig() {
 		if err := viper.ReadInConfig(); err != nil {
 			panic(fmt.Errorf(err.Error()))
 		}
-		log.Println("main: use test config")
+		log.Println("========using test config========")
 	}
 }
