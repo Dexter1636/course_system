@@ -7,8 +7,10 @@ import (
 	"errors"
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
+	"log"
 	"net/http"
 	"regexp"
+	"strconv"
 )
 
 type IAuthController interface {
@@ -71,17 +73,20 @@ func (ctl AuthController) Login(c *gin.Context) {
 	if err := ctl.DB.Where("user_name = ?", req.Username).Take(&user).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			code = vo.WrongPassword
+			log.Println("login: no such user")
 			return
 		}
 	}
 	//用户已被删除, 文档中未要求, 但感觉应该加上这种情况
 	if user.Enabled == 0 {
 		code = vo.UserHasDeleted
+		log.Println("login: user has deleted")
 		return
 	}
 	//密码错误
 	if user.Password != req.Password {
 		code = vo.WrongPassword
+		log.Println("login: wrong password")
 		return
 	}
 
@@ -93,21 +98,64 @@ func (ctl AuthController) Login(c *gin.Context) {
 //当用户点击退出按钮，销毁当前用户 Session 和认证 Cookie
 //登出后清除相应的 Cookie。
 func (ctl AuthController) Logout(c *gin.Context) {
+	//var user model.User
+	code := vo.OK
 
+	//response, ErrNo, user
+	defer func() {
+		c.JSON(http.StatusOK, vo.WhoAmIResponse{
+			Code: code,
+		})
+	}()
+
+	//无cookie, 需要登录
+	_, err := c.Cookie("camp-session")
+	if err != nil {
+		code = vo.LoginRequired
+		log.Println("logout: no cookie, login required")
+		return
+	}
+	//将cookie的maxage设置为-1
+	c.SetCookie("camp-session", "", -1, "/", "localhost", false, true)
 }
 
 //登录后访问个人信息页可以查看自己的信息，包括用户ID、用户名称、用户昵称。
 //LoginRequired      ErrNo = 6  // 用户未登录
 //通过cookie查看
-/*  返回状态码以及下列信息
-type TMember struct {
-	UserID   string
-	Nickname string
-	Username string
-	UserType UserType
-}
-*/
-
 func (ctl AuthController) WhoAmI(c *gin.Context) {
+	var user model.User
+	code := vo.OK
 
+	//response, ErrNo, user
+	defer func() {
+		RoleID, _ := strconv.Atoi(user.RoleId)
+		c.JSON(http.StatusOK, vo.WhoAmIResponse{
+			Code: code,
+			Data: vo.TMember{
+				UserID:   strconv.FormatInt(user.Uuid, 10),
+				Nickname: user.NickName,
+				Username: user.UserName,
+				UserType: vo.UserType(RoleID),
+			},
+		})
+	}()
+
+	cookie, err := c.Cookie("camp-session")
+	//无cookie, 需要登录
+	if err != nil {
+		code = vo.LoginRequired
+		log.Println("WhoAmI: no cookie, loginrequired")
+		return
+	}
+	//有cookie, 根据存的Uuid获取信息
+	uuidT, err := strconv.ParseInt(cookie, 10, 64)
+	if err := ctl.DB.Where("uuid = ?", uuidT).Take(&user).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			code = vo.UserNotExisted
+			log.Println("WhoAmI: uuid not existed")
+			return
+		} else {
+			panic(err.Error())
+		}
+	}
 }
