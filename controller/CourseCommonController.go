@@ -1,6 +1,7 @@
 package controller
 
 import (
+	"course_system/dto"
 	"course_system/model"
 	"course_system/repository"
 	"course_system/vo"
@@ -59,11 +60,7 @@ func (ctl CourseCommonController) GetCourse(c *gin.Context) {
 	defer func() {
 		c.JSON(http.StatusOK, vo.GetCourseResponse{
 			Code: code,
-			Data: vo.TCourse{
-				CourseID:  strconv.FormatInt(course.Id, 10),
-				Name:      course.Name,
-				TeacherID: strconv.FormatInt(course.TeacherId, 10),
-			},
+			Data: dto.ToTCourse(course),
 		})
 	}()
 
