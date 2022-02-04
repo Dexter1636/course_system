@@ -10,7 +10,7 @@ import (
 
 var DB *gorm.DB
 
-func InitDb() *gorm.DB {
+func InitDb() {
 	// Capture connection properties
 	//driverName := viper.GetString("datasource.driverName")
 	host := viper.GetString("datasource.host")
@@ -34,7 +34,6 @@ func InitDb() *gorm.DB {
 	}
 	DB = db
 	fmt.Println("Connected to database.")
-	return db
 }
 
 func GetDB() *gorm.DB {
