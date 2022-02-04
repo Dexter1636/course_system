@@ -250,14 +250,14 @@ func (ctl UserController) Delete(c *gin.Context) {
 			panic(err.Error())
 		}
 	}
-
+	//text
 	//检查用户已删除
 	if user.Enabled == 0 {
 		c.JSON(http.StatusOK, vo.DeleteMemberResponse{Code: vo.UserHasDeleted})
 		return
 	}
 
-	//删除用户
+	//删除用户，将状态设置为0
 	if err := ctl.DB.Model(&user).Update("enabled", "0").Error; err != nil {
 		panic(err.Error())
 	}
