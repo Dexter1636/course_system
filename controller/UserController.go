@@ -7,6 +7,7 @@ import (
 	"errors"
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
+	"log"
 	"net/http"
 	"regexp"
 	"strconv"
@@ -31,12 +32,40 @@ func NewUserController() IUserController {
 
 func (ctl UserController) Create(c *gin.Context) {
 	var req vo.CreateMemberRequest
-
+	var user, u model.User
+	code := vo.OK
 	if err := c.ShouldBindJSON(&req); err != nil {
 		panic(err.Error())
 	}
 
-	var user, u model.User
+	defer func() {
+		c.JSON(http.StatusOK, vo.CreateMemberResponse{
+			Code: code,
+			Data: struct{ UserID string }{UserID: strconv.FormatInt(user.Uuid, 10)},
+		})
+	}()
+
+	//权限检查
+	cookie, err := c.Cookie("camp-session")
+	if err != nil {
+		code = vo.LoginRequired
+		return
+	}
+	uuidT, err := strconv.ParseInt(cookie, 10, 64)
+	if err := ctl.DB.Where("uuid = ?", uuidT).Take(&user).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			code = vo.UserNotExisted
+			log.Println("WhoAmI: uuid not existed")
+			return
+		} else {
+			panic(err.Error())
+		}
+	}
+	if user.UserName != "JudgeAdmin" {
+		code = vo.PermDenied
+		log.Println("Create: PermDenied")
+		return
+	}
 
 	//参数校验
 	tmpStr := req.Password
@@ -50,10 +79,7 @@ func (ctl UserController) Create(c *gin.Context) {
 		(len(req.Nickname) < 4 || len(req.Nickname) > 20) ||
 		(len(req.Username) < 8 || len(req.Username) > 20 || !ru) ||
 		(req.UserType > 3 || req.UserType < 1) {
-		c.JSON(http.StatusOK, vo.CreateMemberResponse{
-			Code: vo.ParamInvalid,
-			Data: struct{ UserID string }{UserID: ""},
-		})
+		code = vo.ParamInvalid
 		return
 	}
 
@@ -64,10 +90,6 @@ func (ctl UserController) Create(c *gin.Context) {
 	if err := ctl.DB.Where("user_name = ?", req.Username).Take(&u).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			ctl.DB.Create(&user)
-			c.JSON(http.StatusOK, vo.CreateMemberResponse{
-				Code: vo.OK,
-				Data: struct{ UserID string }{UserID: strconv.FormatInt(user.Uuid, 10)},
-			})
 			return
 		} else {
 			panic(err.Error())
@@ -75,10 +97,7 @@ func (ctl UserController) Create(c *gin.Context) {
 	}
 
 	//用户已经存在
-	c.JSON(http.StatusOK, vo.CreateMemberResponse{
-		Code: vo.UserHasExisted,
-		Data: struct{ UserID string }{UserID: strconv.FormatInt(u.Uuid, 10)},
-	})
+	code = vo.UserHasExisted
 	return
 }
 
