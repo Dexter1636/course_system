@@ -27,11 +27,20 @@ func setup() {
 	router = RegisterRouter()
 	pathPrefix = "/api/v1"
 	rand.Seed(10)
+	cleanup()
 }
 
 // after all
 func teardown() {
+	cleanup()
+}
 
+// after each test
+func cleanup() {
+	fmt.Println("==cleanup==")
+	common.GetDB().Raw("TRUNCATE TABLE user")
+	common.GetDB().Raw("TRUNCATE TABLE course")
+	common.GetDB().Raw("TRUNCATE TABLE sc")
 }
 
 func TestMain(m *testing.M) {
@@ -83,6 +92,8 @@ func TestCreateCourseRoute(t *testing.T) {
 			CourseID string
 		}{CourseID: "1"},
 	}, resp)
+
+	t.Cleanup(cleanup)
 }
 
 func TestGetCourseRoute(t *testing.T) {
@@ -100,6 +111,8 @@ func TestGetCourseRoute(t *testing.T) {
 		Code: vo.CourseNotExisted,
 		Data: vo.TCourse{},
 	}, resp)
+
+	t.Cleanup(cleanup)
 }
 
 func BenchmarkGetCourseRoute(b *testing.B) {
