@@ -35,9 +35,8 @@ func (ctl UserController) Create(c *gin.Context) {
 	if err := c.ShouldBindJSON(&req); err != nil {
 		panic(err.Error())
 	}
-	//req = vo.CreateMemberRequest{Nickname: "alex", UserType: 1,
-	//	Username: "alexander", Password: "12345678"}
-	var user model.User
+
+	var user, u model.User
 
 	//参数校验
 	tmpStr := req.Password
@@ -53,26 +52,34 @@ func (ctl UserController) Create(c *gin.Context) {
 		(req.UserType > 3 || req.UserType < 1) {
 		c.JSON(http.StatusOK, vo.CreateMemberResponse{
 			Code: vo.ParamInvalid,
+			Data: struct{ UserID string }{UserID: ""},
 		})
 		return
 	}
 
-	if err := ctl.DB.First("user_name = ?", req.Username).Error; err != nil {
+	rid := strconv.FormatInt(int64(int(req.UserType)), 10)
+	user = model.User{Uuid: 0, UserName: req.Username, NickName: req.Nickname,
+		Password: req.Password, RoleId: rid, Enabled: 1}
+
+	if err := ctl.DB.Where("user_name = ?", req.Username).Take(&u).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			ctl.DB.Create(&user)
 			c.JSON(http.StatusOK, vo.CreateMemberResponse{
 				Code: vo.OK,
-				Data: struct{ UserID string }{UserID: string(user.Uuid)},
-			})
-		} else {
-			c.JSON(http.StatusOK, vo.CreateMemberResponse{
-				Code: vo.UserHasExisted,
+				Data: struct{ UserID string }{UserID: strconv.FormatInt(user.Uuid, 10)},
 			})
 			return
+		} else {
+			panic(err.Error())
 		}
-	} else {
-		panic(err.Error())
 	}
+
+	//用户已经存在
+	c.JSON(http.StatusOK, vo.CreateMemberResponse{
+		Code: vo.UserHasExisted,
+		Data: struct{ UserID string }{UserID: strconv.FormatInt(u.Uuid, 10)},
+	})
+	return
 }
 
 func (ctl UserController) Member(c *gin.Context) {
@@ -87,7 +94,15 @@ func (ctl UserController) Member(c *gin.Context) {
 	//检查用户不存在
 	if err := ctl.DB.Where("uuid = ?", req.UserID).Take(&user).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			c.JSON(http.StatusOK, vo.GetMemberResponse{Code: vo.UserNotExisted})
+			c.JSON(http.StatusOK, vo.GetMemberResponse{
+				Code: vo.UserNotExisted,
+				Data: struct {
+					UserID   string
+					Nickname string
+					Username string
+					UserType vo.UserType
+				}{UserID: "", Nickname: "", Username: "", UserType: 0},
+			})
 			return
 		} else {
 			panic(err.Error())
@@ -96,14 +111,29 @@ func (ctl UserController) Member(c *gin.Context) {
 
 	//检查用户已删除
 	if user.Enabled == 0 {
-		c.JSON(http.StatusOK, vo.GetMemberResponse{Code: vo.UserHasDeleted})
+		c.JSON(http.StatusOK, vo.GetMemberResponse{
+			Code: vo.UserHasDeleted,
+			Data: struct {
+				UserID   string
+				Nickname string
+				Username string
+				UserType vo.UserType
+			}{UserID: "", Nickname: "", Username: "", UserType: 0},
+		})
 		return
 	}
 
 	//返回TMember
 	RoleID, _ := strconv.Atoi(user.RoleId)
-	c.JSON(http.StatusOK, vo.GetMemberResponse{Code: vo.OK,
-		Data: vo.TMember{UserID: string(user.Uuid), Nickname: user.NickName, Username: user.UserName, UserType: vo.UserType(RoleID)}})
+	c.JSON(http.StatusOK, vo.GetMemberResponse{
+		Code: vo.OK,
+		Data: struct {
+			UserID   string
+			Nickname string
+			Username string
+			UserType vo.UserType
+		}{UserID: strconv.FormatInt(user.Uuid, 10), Nickname: user.NickName, Username: user.UserName, UserType: vo.UserType(RoleID)},
+	})
 	return
 }
 
@@ -128,7 +158,7 @@ func (ctl UserController) List(c *gin.Context) {
 			panic(err.Error())
 		}
 		MemberList = append(MemberList, vo.TMember{
-			strconv.FormatInt(users[i].Uuid, 10), users[i].NickName, users[i].UserName, vo.UserType(UserType)})
+			UserID: strconv.FormatInt(users[i].Uuid, 10), Nickname: users[i].NickName, Username: users[i].UserName, UserType: vo.UserType(UserType)})
 	}
 
 	//防止返回NULL

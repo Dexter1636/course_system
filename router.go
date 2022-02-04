@@ -5,7 +5,9 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func RegisterRouter(r *gin.Engine) {
+func RegisterRouter() *gin.Engine {
+	r := gin.Default()
+
 	g := r.Group("/api/v1")
 
 	// ping test
@@ -29,14 +31,16 @@ func RegisterRouter(r *gin.Engine) {
 	ccc := controller.NewCourseCommonController()
 	g.POST("/course/create", ccc.CreateCourse)
 	g.GET("/course/get", ccc.GetCourse)
-
-	g.POST("/teacher/bind_course")
-	g.POST("/teacher/unbind_course")
-	g.GET("/teacher/get_course")
-	g.POST("/course/schedule")
+	csc := controller.NewCourseScheduleController()
+	g.POST("/teacher/bind_course", csc.Bind)
+	g.POST("/teacher/unbind_course", csc.Unbind)
+	g.GET("/teacher/get_course", csc.Get)
+	g.POST("/course/schedule", csc.Schedule)
 
 	// 抢课
-	g.POST("/student/book_course")
-	g.GET("/student/course")
+	cbc := controller.NewCourseBookingController()
+	g.POST("/student/book_course", cbc.BookCourse)
+	g.GET("/student/course", cbc.GetStudentCourse)
 
+	return r
 }

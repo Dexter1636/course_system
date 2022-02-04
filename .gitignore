@@ -7,3 +7,4 @@ pid
 build/*
 
 config/application.yaml
+config/test.yaml
