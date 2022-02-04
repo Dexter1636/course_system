@@ -91,7 +91,7 @@ func (ctl AuthController) Login(c *gin.Context) {
 	}
 
 	//设置cookie, 不知道对不对嗷
-	c.SetCookie("camp-session", string(user.Uuid), 0, "/", "localhost", false, true)
+	c.SetCookie("camp-session", strconv.FormatInt(user.Uuid, 10), 0, "/", "127.0.0.1", false, true)
 
 }
 
@@ -101,9 +101,9 @@ func (ctl AuthController) Logout(c *gin.Context) {
 	//var user model.User
 	code := vo.OK
 
-	//response, ErrNo, user
+	//response, ErrNo
 	defer func() {
-		c.JSON(http.StatusOK, vo.WhoAmIResponse{
+		c.JSON(http.StatusOK, vo.LogoutResponse{
 			Code: code,
 		})
 	}()
@@ -116,7 +116,7 @@ func (ctl AuthController) Logout(c *gin.Context) {
 		return
 	}
 	//将cookie的maxage设置为-1
-	c.SetCookie("camp-session", "", -1, "/", "localhost", false, true)
+	c.SetCookie("camp-session", "", -1, "/", "127.0.0.1", false, true)
 }
 
 //登录后访问个人信息页可以查看自己的信息，包括用户ID、用户名称、用户昵称。
