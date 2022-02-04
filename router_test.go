@@ -84,25 +84,40 @@ func TestCreateCourseRoute(t *testing.T) {
 			},
 			ExpCode: http.StatusOK,
 			ExpResp: vo.CreateCourseResponse{
-				Code: 0,
+				Code: vo.OK,
 				Data: struct {
 					CourseID string
 				}{CourseID: "1"},
 			},
 		},
+		{
+			Req: vo.CreateCourseRequest{
+				Name: "Introduction to Java",
+				Cap:  140,
+			},
+			ExpCode: http.StatusOK,
+			ExpResp: vo.CreateCourseResponse{
+				Code: vo.OK,
+				Data: struct {
+					CourseID string
+				}{CourseID: "2"},
+			},
+		},
 	}
 
-	w := httptest.NewRecorder()
-	body, _ := json.Marshal(tests[0].Req)
-	req, _ := http.NewRequest("POST", pathPrefix+"/course/create", strings.NewReader(string(body)))
-	router.ServeHTTP(w, req)
+	for _, tc := range tests {
+		w := httptest.NewRecorder()
+		body, _ := json.Marshal(tc.Req)
+		req, _ := http.NewRequest("POST", pathPrefix+"/course/create", strings.NewReader(string(body)))
+		router.ServeHTTP(w, req)
 
-	assert.Equal(t, tests[0].ExpCode, w.Code)
-	var resp vo.CreateCourseResponse
-	if err := json.Unmarshal([]byte(w.Body.String()), &resp); err != nil {
-		panic(err.Error())
+		assert.Equal(t, tc.ExpCode, w.Code)
+		var resp vo.CreateCourseResponse
+		if err := json.Unmarshal([]byte(w.Body.String()), &resp); err != nil {
+			panic(err.Error())
+		}
+		assert.Equal(t, tc.ExpResp, resp)
 	}
-	assert.Equal(t, tests[0].ExpResp, resp)
 }
 
 func TestGetCourseRoute(t *testing.T) {
