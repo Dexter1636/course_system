@@ -155,29 +155,55 @@ func BenchmarkCreateCourseRoute(b *testing.B) {
 func TestGetCourseRoute(t *testing.T) {
 	t.Cleanup(cleanup)
 
-	w := httptest.NewRecorder()
-	body, _ := json.Marshal(vo.GetCourseRequest{CourseID: "1"})
-	req, _ := http.NewRequest("GET", pathPrefix+"/course/get", strings.NewReader(string(body)))
-	router.ServeHTTP(w, req)
-
-	assert.Equal(t, http.StatusOK, w.Code)
-	var resp vo.GetCourseResponse
-	if err := json.Unmarshal([]byte(w.Body.String()), &resp); err != nil {
-		panic(err.Error())
+	tests := []test.GetCourseTest{
+		{
+			Req:     vo.GetCourseRequest{CourseID: "1"},
+			ExpCode: http.StatusOK,
+			ExpResp: vo.GetCourseResponse{
+				Code: vo.CourseNotExisted,
+				Data: vo.TCourse{},
+			},
+		},
 	}
-	assert.Equal(t, vo.GetCourseResponse{
-		Code: vo.CourseNotExisted,
-		Data: vo.TCourse{},
-	}, resp)
+
+	for _, tc := range tests {
+		w := httptest.NewRecorder()
+		body, _ := json.Marshal(tc.Req)
+		req, _ := http.NewRequest("GET", pathPrefix+"/course/get", strings.NewReader(string(body)))
+		router.ServeHTTP(w, req)
+
+		assert.Equal(t, tc.ExpCode, w.Code)
+		var resp vo.GetCourseResponse
+		if err := json.Unmarshal([]byte(w.Body.String()), &resp); err != nil {
+			panic(err.Error())
+		}
+		assert.Equal(t, tc.ExpResp, resp)
+	}
 }
 
 func BenchmarkGetCourseRoute(b *testing.B) {
 	b.Cleanup(cleanup)
 
 	for i := 0; i < b.N; i++ {
+		tc := test.GetCourseTest{
+			Req:     vo.GetCourseRequest{CourseID: strconv.FormatInt(rand.Int63n(1000), 10)},
+			ExpCode: http.StatusOK,
+			ExpResp: vo.GetCourseResponse{
+				Code: vo.CourseNotExisted,
+				Data: vo.TCourse{},
+			},
+		}
+
 		w := httptest.NewRecorder()
-		body, _ := json.Marshal(vo.GetCourseRequest{CourseID: strconv.FormatInt(rand.Int63n(15), 10)})
+		body, _ := json.Marshal(tc.Req)
 		req, _ := http.NewRequest("GET", pathPrefix+"/course/get", strings.NewReader(string(body)))
 		router.ServeHTTP(w, req)
+
+		assert.Equal(b, tc.ExpCode, w.Code)
+		var resp vo.GetCourseResponse
+		if err := json.Unmarshal([]byte(w.Body.String()), &resp); err != nil {
+			panic(err.Error())
+		}
+		assert.Equal(b, tc.ExpResp, resp)
 	}
 }
