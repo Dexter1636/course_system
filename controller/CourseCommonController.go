@@ -1,11 +1,11 @@
 package controller
 
 import (
+	"course_system/dto"
 	"course_system/model"
 	"course_system/repository"
 	"course_system/vo"
 	"github.com/gin-gonic/gin"
-	"log"
 	"net/http"
 	"strconv"
 )
@@ -59,11 +59,7 @@ func (ctl CourseCommonController) GetCourse(c *gin.Context) {
 	defer func() {
 		c.JSON(http.StatusOK, vo.GetCourseResponse{
 			Code: code,
-			Data: vo.TCourse{
-				CourseID:  strconv.FormatInt(course.Id, 10),
-				Name:      course.Name,
-				TeacherID: strconv.FormatInt(course.TeacherId, 10),
-			},
+			Data: dto.ToTCourse(course),
 		})
 	}()
 
@@ -75,8 +71,6 @@ func (ctl CourseCommonController) GetCourse(c *gin.Context) {
 	if err != nil {
 		code = vo.ParamInvalid
 	}
-
-	log.Println(req)
 
 	// get course
 	code = ctl.repo.GetCourseById(courseId, &course)
