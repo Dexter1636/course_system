@@ -74,6 +74,8 @@ func BenchmarkPingRoute(b *testing.B) {
 // ======== CourseCommon ========
 
 func TestCreateCourseRoute(t *testing.T) {
+	t.Cleanup(cleanup)
+
 	tests := []test.CreateCourseTest{
 		{
 			Req: vo.CreateCourseRequest{
@@ -101,11 +103,11 @@ func TestCreateCourseRoute(t *testing.T) {
 		panic(err.Error())
 	}
 	assert.Equal(t, tests[0].ExpResp, resp)
-
-	t.Cleanup(cleanup)
 }
 
 func TestGetCourseRoute(t *testing.T) {
+	t.Cleanup(cleanup)
+
 	w := httptest.NewRecorder()
 	body, _ := json.Marshal(vo.GetCourseRequest{CourseID: "1"})
 	req, _ := http.NewRequest("GET", pathPrefix+"/course/get", strings.NewReader(string(body)))
@@ -120,17 +122,15 @@ func TestGetCourseRoute(t *testing.T) {
 		Code: vo.CourseNotExisted,
 		Data: vo.TCourse{},
 	}, resp)
-
-	t.Cleanup(cleanup)
 }
 
 func BenchmarkGetCourseRoute(b *testing.B) {
+	b.Cleanup(cleanup)
+
 	for i := 0; i < b.N; i++ {
 		w := httptest.NewRecorder()
 		body, _ := json.Marshal(vo.GetCourseRequest{CourseID: strconv.FormatInt(rand.Int63n(15), 10)})
 		req, _ := http.NewRequest("GET", pathPrefix+"/course/get", strings.NewReader(string(body)))
 		router.ServeHTTP(w, req)
 	}
-
-	b.Cleanup(cleanup)
 }
