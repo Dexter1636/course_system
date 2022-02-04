@@ -2,6 +2,7 @@ package main
 
 import (
 	"course_system/common"
+	"course_system/test"
 	"course_system/vo"
 	"encoding/json"
 	"fmt"
@@ -58,7 +59,7 @@ func TestPingRoute(t *testing.T) {
 	req, _ := http.NewRequest("GET", pathPrefix+"/ping", nil)
 	router.ServeHTTP(w, req)
 
-	assert.Equal(t, 200, w.Code)
+	assert.Equal(t, http.StatusOK, w.Code)
 	assert.Equal(t, "{\"message\":\"pong\"}", w.Body.String())
 }
 
@@ -73,25 +74,33 @@ func BenchmarkPingRoute(b *testing.B) {
 // ======== CourseCommon ========
 
 func TestCreateCourseRoute(t *testing.T) {
+	tests := []test.CreateCourseTest{
+		{
+			Req: vo.CreateCourseRequest{
+				Name: "Introduction to C++",
+				Cap:  120,
+			},
+			ExpCode: http.StatusOK,
+			ExpResp: vo.CreateCourseResponse{
+				Code: 0,
+				Data: struct {
+					CourseID string
+				}{CourseID: "1"},
+			},
+		},
+	}
+
 	w := httptest.NewRecorder()
-	body, _ := json.Marshal(vo.CreateCourseRequest{
-		Name: "Introduction to C++",
-		Cap:  120,
-	})
+	body, _ := json.Marshal(tests[0].Req)
 	req, _ := http.NewRequest("POST", pathPrefix+"/course/create", strings.NewReader(string(body)))
 	router.ServeHTTP(w, req)
 
-	assert.Equal(t, 200, w.Code)
+	assert.Equal(t, tests[0].ExpCode, w.Code)
 	var resp vo.CreateCourseResponse
 	if err := json.Unmarshal([]byte(w.Body.String()), &resp); err != nil {
 		panic(err.Error())
 	}
-	assert.Equal(t, vo.CreateCourseResponse{
-		Code: vo.OK,
-		Data: struct {
-			CourseID string
-		}{CourseID: "1"},
-	}, resp)
+	assert.Equal(t, tests[0].ExpResp, resp)
 
 	t.Cleanup(cleanup)
 }
@@ -102,7 +111,7 @@ func TestGetCourseRoute(t *testing.T) {
 	req, _ := http.NewRequest("GET", pathPrefix+"/course/get", strings.NewReader(string(body)))
 	router.ServeHTTP(w, req)
 
-	assert.Equal(t, 200, w.Code)
+	assert.Equal(t, http.StatusOK, w.Code)
 	var resp vo.GetCourseResponse
 	if err := json.Unmarshal([]byte(w.Body.String()), &resp); err != nil {
 		panic(err.Error())
