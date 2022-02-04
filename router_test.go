@@ -120,6 +120,38 @@ func TestCreateCourseRoute(t *testing.T) {
 	}
 }
 
+func BenchmarkCreateCourseRoute(b *testing.B) {
+	b.Cleanup(cleanup)
+
+	for i := 0; i < b.N; i++ {
+		tc := test.CreateCourseTest{
+			Req: vo.CreateCourseRequest{
+				Name: fmt.Sprintf("Test Course %d", i),
+				Cap:  rand.Intn(1000),
+			},
+			ExpCode: http.StatusOK,
+			ExpResp: vo.CreateCourseResponse{
+				Code: vo.OK,
+				Data: struct {
+					CourseID string
+				}{CourseID: strconv.Itoa(i + 1)},
+			},
+		}
+
+		w := httptest.NewRecorder()
+		body, _ := json.Marshal(tc.Req)
+		req, _ := http.NewRequest("POST", pathPrefix+"/course/create", strings.NewReader(string(body)))
+		router.ServeHTTP(w, req)
+
+		assert.Equal(b, tc.ExpCode, w.Code)
+		var resp vo.CreateCourseResponse
+		if err := json.Unmarshal([]byte(w.Body.String()), &resp); err != nil {
+			panic(err.Error())
+		}
+		assert.Equal(b, tc.ExpResp, resp)
+	}
+}
+
 func TestGetCourseRoute(t *testing.T) {
 	t.Cleanup(cleanup)
 
