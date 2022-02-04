@@ -38,9 +38,9 @@ func teardown() {
 // after each test
 func cleanup() {
 	fmt.Println("==cleanup==")
-	common.GetDB().Raw("TRUNCATE TABLE user")
-	common.GetDB().Raw("TRUNCATE TABLE course")
-	common.GetDB().Raw("TRUNCATE TABLE sc")
+	common.GetDB().Exec("TRUNCATE TABLE user")
+	common.GetDB().Exec("TRUNCATE TABLE course")
+	common.GetDB().Exec("TRUNCATE TABLE sc")
 }
 
 func TestMain(m *testing.M) {
@@ -82,7 +82,7 @@ func TestCreateCourseRoute(t *testing.T) {
 	router.ServeHTTP(w, req)
 
 	assert.Equal(t, 200, w.Code)
-	var resp vo.GetCourseResponse
+	var resp vo.CreateCourseResponse
 	if err := json.Unmarshal([]byte(w.Body.String()), &resp); err != nil {
 		panic(err.Error())
 	}
@@ -122,4 +122,6 @@ func BenchmarkGetCourseRoute(b *testing.B) {
 		req, _ := http.NewRequest("GET", pathPrefix+"/course/get", strings.NewReader(string(body)))
 		router.ServeHTTP(w, req)
 	}
+
+	b.Cleanup(cleanup)
 }
