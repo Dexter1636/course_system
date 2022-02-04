@@ -46,7 +46,7 @@ func (ctl AuthController) Login(c *gin.Context) {
 			Code: code,
 			Data: struct {
 				UserID string
-			}{string(user.Uuid)},
+			}{strconv.FormatInt(user.Uuid, 10)},
 		})
 	}()
 
