@@ -8,6 +8,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
 	"net/http"
+	"strconv"
 )
 
 type ICourseScheduleController interface {
@@ -30,13 +31,14 @@ func (ctl CourseScheduleController) Bind(c *gin.Context) {
 		panic(err.Error())
 	}
 	var sample model.Course
-	a := ctl.DB.Model(&model.Course{}).First(&sample, req.CourseID)
-	if a.Error == gorm.ErrEmptySlice {
+	number, _ := strconv.ParseInt(req.CourseID, 10, 64)
+	a := ctl.DB.Model(&model.Course{}).First(&sample, number)
+	if a.RowsAffected == 0 {
 		c.JSON(http.StatusOK, vo.BindCourseResponse{Code: vo.CourseNotExisted})
 	} else if sample.TeacherId != 0 {
 		c.JSON(http.StatusOK, vo.BindCourseResponse{Code: vo.CourseHasBound})
 	} else {
-		ctl.DB.Model(&model.Course{}).First(sample, req.CourseID).Update("TeacherId", req.TeacherID)
+		ctl.DB.Model(&model.Course{}).First(&sample, number).Update("TeacherId", req.TeacherID)
 		c.JSON(http.StatusOK, vo.BindCourseResponse{Code: vo.OK})
 	}
 }
@@ -46,13 +48,14 @@ func (ctl CourseScheduleController) Unbind(c *gin.Context) {
 		panic(err.Error())
 	}
 	var sample model.Course
-	a := ctl.DB.Model(&model.Course{}).First(&sample, req.CourseID)
-	if a.Error == gorm.ErrEmptySlice {
+	number, _ := strconv.ParseInt(req.CourseID, 10, 64)
+	a := ctl.DB.Model(&model.Course{}).First(&sample, number)
+	if a.RowsAffected == 0 {
 		c.JSON(http.StatusOK, vo.UnbindCourseResponse{Code: vo.CourseNotExisted})
 	} else if sample.TeacherId == 0 {
 		c.JSON(http.StatusOK, vo.UnbindCourseResponse{Code: vo.CourseNotBind})
 	} else {
-		ctl.DB.Model(&model.Course{}).First(sample, req.CourseID).Update("TeacherId", 0)
+		ctl.DB.Model(&model.Course{}).First(&sample, number).Update("TeacherId", 0)
 		c.JSON(http.StatusOK, vo.UnbindCourseResponse{Code: vo.OK})
 	}
 }
@@ -61,13 +64,16 @@ func (ctl CourseScheduleController) Get(c *gin.Context) {
 	if err := c.ShouldBindJSON(&req); err != nil {
 		panic(err.Error())
 	}
+	number, _ := strconv.ParseInt(req.TeacherID, 10, 64)
 	var rows []model.Course
 	var ans vo.GetTeacherCourseResponse
-	result := ctl.DB.Where("TeacherId = ?", req.TeacherID).Find(&rows)
+	result := ctl.DB.Model(&model.Course{}).Where("teacher_id = ?", number).Find(&rows)
+	ans.Data.CourseList = make([]*vo.TCourse, result.RowsAffected)
 	for i := 0; i < int(result.RowsAffected); i++ {
-		ans.Data.CourseList[i].CourseID = string(rows[i].Id)
+		ans.Data.CourseList[i] = new(vo.TCourse)
+		ans.Data.CourseList[i].CourseID = strconv.FormatInt(rows[i].Id, 10)
 		ans.Data.CourseList[i].Name = rows[i].Name
-		ans.Data.CourseList[i].TeacherID = string(rows[i].TeacherId)
+		ans.Data.CourseList[i].TeacherID = strconv.FormatInt(rows[i].TeacherId, 10)
 	}
 	ans.Code = vo.OK
 	c.JSON(http.StatusOK, ans)
@@ -97,7 +103,7 @@ func add(x int, y int) {
 }
 func dfs(x int) bool {
 	var p int = x
-	for p != 0 {
+	for a[p].nxt != 0 {
 		p = a[p].nxt
 		if v[a[p].to] == false {
 			v[a[p].to] = true
@@ -115,18 +121,20 @@ func (ctl CourseScheduleController) Schedule(c *gin.Context) {
 	if err := c.ShouldBindJSON(&req); err != nil {
 		panic(err.Error())
 	}
+
 	var tnum map[string]int
 	var cnum map[string]int
 	tnum = make(map[string]int)
 	cnum = make(map[string]int)
 	tid = make([]string, 1, len(req.TeacherCourseRelationShip)+10)
 	cid = make([]string, 1, len(req.TeacherCourseRelationShip)+10)
+
 	var n, m, nums int = 0, 0, 0
 	for i, j := range req.TeacherCourseRelationShip {
 		n++
 		tnum[i] = n
 		tid = append(tid, i)
-		for k := 1; k <= len(j); k++ {
+		for k := 0; k < len(j); k++ {
 			nums += 2
 			x := j[k]
 			value, ok := cnum[x]
@@ -143,12 +151,13 @@ func (ctl CourseScheduleController) Schedule(c *gin.Context) {
 	a = make([]node, nums+10)
 	q = make([]int, n+m+10)
 	v = make([]bool, nums+10)
-	match = make([]int, n+10)
+	match = make([]int, n+m+10)
+	tot = n + m
 	for i := 1; i <= n+m; i++ {
 		q[i] = i
 	}
 	for i, j := range req.TeacherCourseRelationShip {
-		for k := 1; k <= len(j); k++ {
+		for k := 0; k < len(j); k++ {
 			var x, y int = tnum[i], cnum[j[k]]
 			add(x, y+n)
 		}
@@ -160,10 +169,12 @@ func (ctl CourseScheduleController) Schedule(c *gin.Context) {
 		dfs(i)
 	}
 	var ans vo.ScheduleCourseResponse
+	ans.Data = make(map[string]string)
 	ans.Code = vo.OK
+
 	for i := 1; i <= n; i++ {
 		if match[i] != 0 {
-			ans.Data[tid[i]] = cid[match[i]]
+			ans.Data[tid[i]] = cid[match[i]-n]
 		}
 	}
 	c.JSON(http.StatusOK, ans)
