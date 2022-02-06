@@ -52,6 +52,26 @@ func TestMain(m *testing.M) {
 	os.Exit(code)
 }
 
+// ==== DB Data Init Functions ====
+
+func initDataForCourseCommon() {
+	// insert students
+	common.GetDB().Exec("INSERT INTO user(user_name, nick_name, password, role_id, enabled) VALUES ('Amy Wong', 'Amy', '123456', '2', 1)")
+	common.GetDB().Exec("INSERT INTO user(user_name, nick_name, password, role_id, enabled) VALUES ('Dexter Peng', 'Dexter', '123456', '2', 1)")
+	common.GetDB().Exec("INSERT INTO user(user_name, nick_name, password, role_id, enabled) VALUES ('San Zhang', 'San', '123456', '2', 1)")
+	common.GetDB().Exec("INSERT INTO user(user_name, nick_name, password, role_id, enabled) VALUES ('Si Li', 'Si', '123456', '2', 1)")
+
+	// insert courses
+	common.GetDB().Exec("INSERT INTO course(name, avail, cap) VALUES ('test1', 1, 1)")
+	common.GetDB().Exec("INSERT INTO course(name, avail, cap) VALUES ('test2', 3, 3)")
+	common.GetDB().Exec("INSERT INTO course(name, avail, cap) VALUES ('test3', 0, 100)")
+	common.GetDB().Exec("INSERT INTO course(name, avail, cap) VALUES ('test4', 100, 100)")
+}
+
+func initDataForCourseBooking() {
+	initDataForCourseCommon()
+}
+
 // ======== Ping ========
 
 func TestPingRoute(t *testing.T) {
@@ -212,6 +232,7 @@ func BenchmarkGetCourseRoute(b *testing.B) {
 
 func TestBookCourseRoute(t *testing.T) {
 	t.Cleanup(cleanup)
+	initDataForCourseBooking()
 
 	tests := []test.BookCourseTest{
 		{
@@ -220,7 +241,31 @@ func TestBookCourseRoute(t *testing.T) {
 				CourseID:  "1",
 			},
 			ExpCode: http.StatusOK,
-			ExpResp: vo.BookCourseResponse{Code: vo.StudentNotExisted},
+			ExpResp: vo.BookCourseResponse{Code: vo.OK},
+		},
+		{
+			Req: vo.BookCourseRequest{
+				StudentID: "2",
+				CourseID:  "1",
+			},
+			ExpCode: http.StatusOK,
+			ExpResp: vo.BookCourseResponse{Code: vo.CourseNotAvailable},
+		},
+		{
+			Req: vo.BookCourseRequest{
+				StudentID: "2",
+				CourseID:  "3",
+			},
+			ExpCode: http.StatusOK,
+			ExpResp: vo.BookCourseResponse{Code: vo.CourseNotAvailable},
+		},
+		{
+			Req: vo.BookCourseRequest{
+				StudentID: "2",
+				CourseID:  "2",
+			},
+			ExpCode: http.StatusOK,
+			ExpResp: vo.BookCourseResponse{Code: vo.OK},
 		},
 	}
 
