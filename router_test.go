@@ -242,6 +242,11 @@ func TestBookCourseRoute(t *testing.T) {
 
 func BenchmarkBookCourseRoute(b *testing.B) {
 	b.Cleanup(cleanup)
+	initDataForCourseBooking()
+
+	for i := 0; i < b.N; i++ {
+		test.CallApi(router, "POST", pathPrefix, "/student/book_course", cases.GenerateBookCourseReq())
+	}
 }
 
 func TestGetStudentCourseRoute(t *testing.T) {

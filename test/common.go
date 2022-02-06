@@ -25,3 +25,10 @@ func AssertCase(t *testing.T, router *gin.Engine, method string, pathPrefix stri
 	expResp, _ := json.Marshal(testCase.getExpResp())
 	assert.Equal(t, string(expResp), w.Body.String())
 }
+
+func AssertBenchmarkCase(b *testing.B, router *gin.Engine, method string, pathPrefix string, relativePath string, testCase BaseTest) {
+	w := CallApi(router, method, pathPrefix, relativePath, testCase.getReq())
+	assert.Equal(b, testCase.getExpCode(), w.Code)
+	expResp, _ := json.Marshal(testCase.getExpResp())
+	assert.Equal(b, string(expResp), w.Body.String())
+}

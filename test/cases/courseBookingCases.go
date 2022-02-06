@@ -3,7 +3,9 @@ package cases
 import (
 	"course_system/test"
 	"course_system/vo"
+	"math/rand"
 	"net/http"
+	"strconv"
 )
 
 var BookCourseCases = []test.BookCourseTest{
@@ -39,4 +41,12 @@ var BookCourseCases = []test.BookCourseTest{
 		ExpCode: http.StatusOK,
 		ExpResp: vo.BookCourseResponse{Code: vo.OK},
 	},
+}
+
+func GenerateBookCourseReq() (tc vo.BookCourseRequest) {
+	tc = vo.BookCourseRequest{
+		StudentID: strconv.FormatInt(rand.Int63n(10), 10),
+		CourseID:  strconv.FormatInt(rand.Int63n(10), 10),
+	}
+	return tc
 }
