@@ -38,14 +38,26 @@ type GetStudentCourseTest struct {
 	ExpResp vo.GetStudentCourseResponse
 }
 
-func (g GetStudentCourseTest) getReq() interface{} {
-	return g.Req
+func (t BookCourseTest) getReq() interface{} {
+	return t.Req
 }
 
-func (g GetStudentCourseTest) getExpCode() interface{} {
-	return g.ExpCode
+func (t BookCourseTest) getExpCode() interface{} {
+	return t.ExpCode
 }
 
-func (g GetStudentCourseTest) getExpResp() interface{} {
-	return g.ExpResp
+func (t BookCourseTest) getExpResp() interface{} {
+	return t.ExpResp
+}
+
+func (t GetStudentCourseTest) getReq() interface{} {
+	return t.Req
+}
+
+func (t GetStudentCourseTest) getExpCode() interface{} {
+	return t.ExpCode
+}
+
+func (t GetStudentCourseTest) getExpResp() interface{} {
+	return t.ExpResp
 }

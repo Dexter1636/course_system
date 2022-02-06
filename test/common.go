@@ -1,7 +1,6 @@
 package test
 
 import (
-	"course_system/vo"
 	"encoding/json"
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/assert"
@@ -19,12 +18,10 @@ func CallApi(router *gin.Engine, method string, pathPrefix string, relativePath 
 	return w
 }
 
+// AssertCase Run the testCase and assert whether the result is equal to the expected value.
 func AssertCase(t *testing.T, router *gin.Engine, method string, pathPrefix string, relativePath string, testCase BaseTest) {
 	w := CallApi(router, method, pathPrefix, relativePath, testCase.getReq())
 	assert.Equal(t, testCase.getExpCode(), w.Code)
-	var resp vo.GetStudentCourseResponse
-	if err := json.Unmarshal([]byte(w.Body.String()), &resp); err != nil {
-		panic(err.Error())
-	}
-	assert.Equal(t, testCase.getExpResp(), resp)
+	expResp, _ := json.Marshal(testCase.getExpResp())
+	assert.Equal(t, string(expResp), w.Body.String())
 }

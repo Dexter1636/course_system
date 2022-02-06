@@ -225,17 +225,7 @@ func TestBookCourseRoute(t *testing.T) {
 	}
 
 	for _, tc := range tests {
-		w := httptest.NewRecorder()
-		body, _ := json.Marshal(tc.Req)
-		req, _ := http.NewRequest("POST", pathPrefix+"/student/book_course", strings.NewReader(string(body)))
-		router.ServeHTTP(w, req)
-
-		assert.Equal(t, tc.ExpCode, w.Code)
-		var resp vo.BookCourseResponse
-		if err := json.Unmarshal([]byte(w.Body.String()), &resp); err != nil {
-			panic(err.Error())
-		}
-		assert.Equal(t, tc.ExpResp, resp)
+		test.AssertCase(t, router, "POST", pathPrefix, "/student/book_course", tc)
 	}
 }
 
