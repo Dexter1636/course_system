@@ -3,6 +3,7 @@ package main
 import (
 	"course_system/common"
 	"course_system/test"
+	"course_system/test/cases"
 	"course_system/vo"
 	"encoding/json"
 	"fmt"
@@ -234,42 +235,7 @@ func TestBookCourseRoute(t *testing.T) {
 	t.Cleanup(cleanup)
 	initDataForCourseBooking()
 
-	tests := []test.BookCourseTest{
-		{
-			Req: vo.BookCourseRequest{
-				StudentID: "1",
-				CourseID:  "1",
-			},
-			ExpCode: http.StatusOK,
-			ExpResp: vo.BookCourseResponse{Code: vo.OK},
-		},
-		{
-			Req: vo.BookCourseRequest{
-				StudentID: "2",
-				CourseID:  "1",
-			},
-			ExpCode: http.StatusOK,
-			ExpResp: vo.BookCourseResponse{Code: vo.CourseNotAvailable},
-		},
-		{
-			Req: vo.BookCourseRequest{
-				StudentID: "2",
-				CourseID:  "3",
-			},
-			ExpCode: http.StatusOK,
-			ExpResp: vo.BookCourseResponse{Code: vo.CourseNotAvailable},
-		},
-		{
-			Req: vo.BookCourseRequest{
-				StudentID: "2",
-				CourseID:  "2",
-			},
-			ExpCode: http.StatusOK,
-			ExpResp: vo.BookCourseResponse{Code: vo.OK},
-		},
-	}
-
-	for _, tc := range tests {
+	for _, tc := range cases.BookCourseCases {
 		test.AssertCase(t, router, "POST", pathPrefix, "/student/book_course", tc)
 	}
 }
