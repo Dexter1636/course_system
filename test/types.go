@@ -24,6 +24,32 @@ type GetCourseTest struct {
 	ExpResp vo.GetCourseResponse
 }
 
+func (t CreateCourseTest) getReq() interface{} {
+	return t.Req
+}
+
+func (t CreateCourseTest) getExpCode() interface{} {
+	return t.ExpCode
+}
+
+func (t CreateCourseTest) getExpResp() interface{} {
+	return t.ExpResp
+}
+
+func (t GetCourseTest) getReq() interface{} {
+	return t.Req
+}
+
+func (t GetCourseTest) getExpCode() interface{} {
+	return t.ExpCode
+}
+
+func (t GetCourseTest) getExpResp() interface{} {
+	return t.ExpResp
+}
+
+// ===============================
+
 // ======== CourseBooking ========
 
 type BookCourseTest struct {
@@ -61,3 +87,5 @@ func (t GetStudentCourseTest) getExpCode() interface{} {
 func (t GetStudentCourseTest) getExpResp() interface{} {
 	return t.ExpResp
 }
+
+// ===============================

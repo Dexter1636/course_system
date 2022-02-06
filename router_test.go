@@ -4,16 +4,12 @@ import (
 	"course_system/common"
 	"course_system/test"
 	"course_system/test/cases"
-	"course_system/vo"
-	"encoding/json"
 	"fmt"
 	"github.com/gin-gonic/gin"
 	"math/rand"
 	"net/http"
 	"net/http/httptest"
 	"os"
-	"strconv"
-	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -97,47 +93,8 @@ func BenchmarkPingRoute(b *testing.B) {
 func TestCreateCourseRoute(t *testing.T) {
 	t.Cleanup(cleanup)
 
-	tests := []test.CreateCourseTest{
-		{
-			Req: vo.CreateCourseRequest{
-				Name: "Introduction to C++",
-				Cap:  120,
-			},
-			ExpCode: http.StatusOK,
-			ExpResp: vo.CreateCourseResponse{
-				Code: vo.OK,
-				Data: struct {
-					CourseID string
-				}{CourseID: "1"},
-			},
-		},
-		{
-			Req: vo.CreateCourseRequest{
-				Name: "Introduction to Java",
-				Cap:  140,
-			},
-			ExpCode: http.StatusOK,
-			ExpResp: vo.CreateCourseResponse{
-				Code: vo.OK,
-				Data: struct {
-					CourseID string
-				}{CourseID: "2"},
-			},
-		},
-	}
-
-	for _, tc := range tests {
-		w := httptest.NewRecorder()
-		body, _ := json.Marshal(tc.Req)
-		req, _ := http.NewRequest("POST", pathPrefix+"/course/create", strings.NewReader(string(body)))
-		router.ServeHTTP(w, req)
-
-		assert.Equal(t, tc.ExpCode, w.Code)
-		var resp vo.CreateCourseResponse
-		if err := json.Unmarshal([]byte(w.Body.String()), &resp); err != nil {
-			panic(err.Error())
-		}
-		assert.Equal(t, tc.ExpResp, resp)
+	for _, tc := range cases.CreateCourseCases {
+		test.AssertCase(t, router, "POST", pathPrefix, "/course/create", tc)
 	}
 }
 
@@ -145,60 +102,15 @@ func BenchmarkCreateCourseRoute(b *testing.B) {
 	b.Cleanup(cleanup)
 
 	for i := 0; i < b.N; i++ {
-		tc := test.CreateCourseTest{
-			Req: vo.CreateCourseRequest{
-				Name: fmt.Sprintf("Test Course %d", i),
-				Cap:  rand.Intn(1000),
-			},
-			ExpCode: http.StatusOK,
-			ExpResp: vo.CreateCourseResponse{
-				Code: vo.OK,
-				Data: struct {
-					CourseID string
-				}{CourseID: strconv.Itoa(i + 1)},
-			},
-		}
-
-		w := httptest.NewRecorder()
-		body, _ := json.Marshal(tc.Req)
-		req, _ := http.NewRequest("POST", pathPrefix+"/course/create", strings.NewReader(string(body)))
-		router.ServeHTTP(w, req)
-
-		assert.Equal(b, tc.ExpCode, w.Code)
-		var resp vo.CreateCourseResponse
-		if err := json.Unmarshal([]byte(w.Body.String()), &resp); err != nil {
-			panic(err.Error())
-		}
-		assert.Equal(b, tc.ExpResp, resp)
+		test.AssertBenchmarkCase(b, router, "POST", pathPrefix, "/course/create", cases.GenerateCreateCourseCase(i))
 	}
 }
 
 func TestGetCourseRoute(t *testing.T) {
 	t.Cleanup(cleanup)
 
-	tests := []test.GetCourseTest{
-		{
-			Req:     vo.GetCourseRequest{CourseID: "1"},
-			ExpCode: http.StatusOK,
-			ExpResp: vo.GetCourseResponse{
-				Code: vo.CourseNotExisted,
-				Data: vo.TCourse{},
-			},
-		},
-	}
-
-	for _, tc := range tests {
-		w := httptest.NewRecorder()
-		body, _ := json.Marshal(tc.Req)
-		req, _ := http.NewRequest("GET", pathPrefix+"/course/get", strings.NewReader(string(body)))
-		router.ServeHTTP(w, req)
-
-		assert.Equal(t, tc.ExpCode, w.Code)
-		var resp vo.GetCourseResponse
-		if err := json.Unmarshal([]byte(w.Body.String()), &resp); err != nil {
-			panic(err.Error())
-		}
-		assert.Equal(t, tc.ExpResp, resp)
+	for _, tc := range cases.GetCourseCases {
+		test.AssertCase(t, router, "GET", pathPrefix, "/course/get", tc)
 	}
 }
 
@@ -206,26 +118,7 @@ func BenchmarkGetCourseRoute(b *testing.B) {
 	b.Cleanup(cleanup)
 
 	for i := 0; i < b.N; i++ {
-		tc := test.GetCourseTest{
-			Req:     vo.GetCourseRequest{CourseID: strconv.FormatInt(rand.Int63n(1000), 10)},
-			ExpCode: http.StatusOK,
-			ExpResp: vo.GetCourseResponse{
-				Code: vo.CourseNotExisted,
-				Data: vo.TCourse{},
-			},
-		}
-
-		w := httptest.NewRecorder()
-		body, _ := json.Marshal(tc.Req)
-		req, _ := http.NewRequest("GET", pathPrefix+"/course/get", strings.NewReader(string(body)))
-		router.ServeHTTP(w, req)
-
-		assert.Equal(b, tc.ExpCode, w.Code)
-		var resp vo.GetCourseResponse
-		if err := json.Unmarshal([]byte(w.Body.String()), &resp); err != nil {
-			panic(err.Error())
-		}
-		assert.Equal(b, tc.ExpResp, resp)
+		test.AssertBenchmarkCase(b, router, "GET", pathPrefix, "/course/get", cases.GenerateGetCourseCase(i))
 	}
 }
 
@@ -254,20 +147,7 @@ func BenchmarkBookCourseRoute(b *testing.B) {
 func TestGetStudentCourseRoute(t *testing.T) {
 	t.Cleanup(cleanup)
 
-	tests := []test.GetStudentCourseTest{
-		{
-			Req:     vo.GetStudentCourseRequest{StudentID: "1"},
-			ExpCode: http.StatusOK,
-			ExpResp: vo.GetStudentCourseResponse{
-				Code: vo.StudentNotExisted,
-				Data: struct {
-					CourseList []vo.TCourse
-				}{CourseList: []vo.TCourse{}},
-			},
-		},
-	}
-
-	for _, tc := range tests {
+	for _, tc := range cases.GetStudentCourseCases {
 		test.AssertCase(t, router, "GET", pathPrefix, "/student/course", tc)
 	}
 }

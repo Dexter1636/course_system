@@ -50,3 +50,16 @@ func GenerateBookCourseReq() (tc vo.BookCourseRequest) {
 	}
 	return tc
 }
+
+var GetStudentCourseCases = []test.GetStudentCourseTest{
+	{
+		Req:     vo.GetStudentCourseRequest{StudentID: "1"},
+		ExpCode: http.StatusOK,
+		ExpResp: vo.GetStudentCourseResponse{
+			Code: vo.StudentNotExisted,
+			Data: struct {
+				CourseList []vo.TCourse
+			}{CourseList: []vo.TCourse{}},
+		},
+	},
+}
