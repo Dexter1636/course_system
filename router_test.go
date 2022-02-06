@@ -245,6 +245,33 @@ func BenchmarkBookCourseRoute(b *testing.B) {
 
 func TestGetStudentCourseRoute(t *testing.T) {
 	t.Cleanup(cleanup)
+
+	tests := []test.GetStudentCourseTest{
+		{
+			Req:     vo.GetStudentCourseRequest{StudentID: "1"},
+			ExpCode: http.StatusOK,
+			ExpResp: vo.GetStudentCourseResponse{
+				Code: vo.StudentNotExisted,
+				Data: struct {
+					CourseList []vo.TCourse
+				}{CourseList: []vo.TCourse{}},
+			},
+		},
+	}
+
+	for _, tc := range tests {
+		w := httptest.NewRecorder()
+		body, _ := json.Marshal(tc.Req)
+		req, _ := http.NewRequest("GET", pathPrefix+"/student/course", strings.NewReader(string(body)))
+		router.ServeHTTP(w, req)
+
+		assert.Equal(t, tc.ExpCode, w.Code)
+		var resp vo.GetStudentCourseResponse
+		if err := json.Unmarshal([]byte(w.Body.String()), &resp); err != nil {
+			panic(err.Error())
+		}
+		assert.Equal(t, tc.ExpResp, resp)
+	}
 }
 
 func BenchmarkGetStudentCourseRoute(b *testing.B) {
