@@ -4,6 +4,7 @@ import (
 	"course_system/common"
 	"course_system/test"
 	"course_system/test/cases"
+	"course_system/test/data"
 	"fmt"
 	"github.com/gin-gonic/gin"
 	"math/rand"
@@ -47,26 +48,6 @@ func TestMain(m *testing.M) {
 	code := m.Run()
 	teardown()
 	os.Exit(code)
-}
-
-// ==== DB Data Init Functions ====
-
-func initDataForCourseCommon() {
-	// insert students
-	common.GetDB().Exec("INSERT INTO user(user_name, nick_name, password, role_id, enabled) VALUES ('Amy Wong', 'Amy', '123456', '2', 1)")
-	common.GetDB().Exec("INSERT INTO user(user_name, nick_name, password, role_id, enabled) VALUES ('Dexter Peng', 'Dexter', '123456', '2', 1)")
-	common.GetDB().Exec("INSERT INTO user(user_name, nick_name, password, role_id, enabled) VALUES ('San Zhang', 'San', '123456', '2', 1)")
-	common.GetDB().Exec("INSERT INTO user(user_name, nick_name, password, role_id, enabled) VALUES ('Si Li', 'Si', '123456', '2', 1)")
-
-	// insert courses
-	common.GetDB().Exec("INSERT INTO course(name, avail, cap) VALUES ('test1', 1, 1)")
-	common.GetDB().Exec("INSERT INTO course(name, avail, cap) VALUES ('test2', 3, 3)")
-	common.GetDB().Exec("INSERT INTO course(name, avail, cap) VALUES ('test3', 0, 100)")
-	common.GetDB().Exec("INSERT INTO course(name, avail, cap) VALUES ('test4', 100, 100)")
-}
-
-func initDataForCourseBooking() {
-	initDataForCourseCommon()
 }
 
 // ======== Ping ========
@@ -126,7 +107,7 @@ func BenchmarkGetCourseRoute(b *testing.B) {
 
 func TestBookCourseRoute(t *testing.T) {
 	t.Cleanup(cleanup)
-	initDataForCourseBooking()
+	data.InitDataForCourseBooking()
 
 	for _, tc := range cases.BookCourseCases {
 		test.AssertCase(t, router, "POST", pathPrefix, "/student/book_course", tc)
@@ -135,7 +116,7 @@ func TestBookCourseRoute(t *testing.T) {
 
 func BenchmarkBookCourseRoute(b *testing.B) {
 	b.Cleanup(cleanup)
-	initDataForCourseBooking()
+	data.InitDataForCourseBooking()
 
 	b.RunParallel(func(pb *testing.PB) {
 		for pb.Next() {
