@@ -17,3 +17,17 @@ type GetCourseTest struct {
 	ExpCode int
 	ExpResp vo.GetCourseResponse
 }
+
+// ======== CourseBooking ========
+
+type BookCourseTest struct {
+	Req     vo.BookCourseRequest
+	ExpCode int
+	ExpResp vo.BookCourseResponse
+}
+
+type GetStudentCourseTest struct {
+	Req     vo.GetStudentCourseRequest
+	ExpCode int
+	ExpResp vo.GetStudentCourseResponse
+}
