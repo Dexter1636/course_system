@@ -1,6 +1,7 @@
 package common
 
 import (
+	"context"
 	"fmt"
 	"github.com/go-redis/redis/v8"
 	"github.com/spf13/viper"
@@ -38,7 +39,7 @@ func InitDb() {
 	fmt.Println("Connected to database.")
 }
 
-func InitRdb() {
+func InitRdb(ctx context.Context) {
 	host := viper.GetString("redis.host")
 	port := viper.GetString("redis.port")
 	db := viper.GetString("redis.db")
@@ -49,7 +50,11 @@ func InitRdb() {
 	if err != nil {
 		panic(err)
 	}
-	RDB = redis.NewClient(opt)
+	rdb := redis.NewClient(opt)
+	if pong, err := rdb.Ping(ctx).Result(); err != nil || pong != "PONG" {
+		panic("failed to connect to redis server, err: " + err.Error())
+	}
+	fmt.Println("Connected to redis server.")
 }
 
 func GetDB() *gorm.DB {
