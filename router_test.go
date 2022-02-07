@@ -138,3 +138,42 @@ func TestGetStudentCourseRoute(t *testing.T) {
 func BenchmarkGetStudentCourseRoute(b *testing.B) {
 	b.Cleanup(cleanup)
 }
+
+// ======== User ========(Create && Get)
+//测试前需将UserController中的“权限检查”部分注释掉
+
+func TestCreateMemberRoute(t *testing.T) {
+	t.Cleanup(cleanup)
+
+	for _, tc := range cases.CreateMemberCases {
+		test.AssertCase(t, router, "POST", pathPrefix, "/member/create", tc)
+	}
+}
+
+func BenchmarkCreateMemberRoute(b *testing.B) {
+	b.Cleanup(cleanup)
+
+	for i := 0; i < b.N; i++ {
+		test.AssertBenchmarkCase(b, router, "POST", pathPrefix, "/member/create", cases.GenerateCreateMemberCase(i))
+	}
+}
+
+func TestGetMemberRoute(t *testing.T) {
+	t.Cleanup(cleanup)
+
+	data.InitDataForUser()
+
+	for _, tc := range cases.GetMemberCases {
+		test.AssertCase(t, router, "GET", pathPrefix, "/member", tc)
+	}
+}
+
+func BenchmarkGetMemberRoute(b *testing.B) {
+	b.Cleanup(cleanup)
+
+	data.InitDataForUser()
+
+	for i := 0; i < b.N; i++ {
+		test.AssertBenchmarkCase(b, router, "GET", pathPrefix, "/member", cases.GenerateGetMemberCase(i))
+	}
+}
