@@ -126,3 +126,59 @@ func (t GetMemberTest) getExpCode() interface{} {
 func (t GetMemberTest) getExpResp() interface{} {
 	return t.ExpResp
 }
+
+// ======== User ========(other)
+
+type GetMemberListTest struct {
+	Req     vo.GetMemberListRequest
+	ExpCode int
+	ExpResp vo.GetMemberListResponse
+}
+
+type UpdateMemberTest struct {
+	Req     vo.UpdateMemberRequest
+	ExpCode int
+	ExpResp vo.UpdateMemberResponse
+}
+
+type DeleteMemberTest struct {
+	Req     vo.DeleteMemberRequest
+	ExpCode int
+	ExpResp vo.DeleteMemberResponse
+}
+
+func (t GetMemberListTest) getReq() interface{} {
+	return t.Req
+}
+
+func (t GetMemberListTest) getExpCode() interface{} {
+	return t.ExpCode
+}
+
+func (t GetMemberListTest) getExpResp() interface{} {
+	return t.ExpResp
+}
+
+func (t UpdateMemberTest) getReq() interface{} {
+	return t.Req
+}
+
+func (t UpdateMemberTest) getExpCode() interface{} {
+	return t.ExpCode
+}
+
+func (t UpdateMemberTest) getExpResp() interface{} {
+	return t.ExpResp
+}
+
+func (t DeleteMemberTest) getReq() interface{} {
+	return t.Req
+}
+
+func (t DeleteMemberTest) getExpCode() interface{} {
+	return t.ExpCode
+}
+
+func (t DeleteMemberTest) getExpResp() interface{} {
+	return t.ExpResp
+}

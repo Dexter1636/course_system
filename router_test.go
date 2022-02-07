@@ -177,3 +177,71 @@ func BenchmarkGetMemberRoute(b *testing.B) {
 		test.AssertBenchmarkCase(b, router, "GET", pathPrefix, "/member", cases.GenerateGetMemberCase(i))
 	}
 }
+
+// ======== User ========(other)
+func TestGetMemberListRoute(t *testing.T) {
+
+	t.Cleanup(cleanup)
+
+	data.InitDataForUser()
+	data.InitDataForUserOther()
+
+	for _, tc := range cases.GetMemberListCases {
+		test.AssertCase(t, router, "GET", pathPrefix, "/member/list", tc)
+	}
+}
+
+func BenchmarkGetMemberListRoute(b *testing.B) {
+	b.Cleanup(cleanup)
+
+	data.InitDataForUser()
+	data.InitDataForUserOther()
+
+	for i := 0; i < b.N; i++ {
+		test.AssertBenchmarkCase(b, router, "GET", pathPrefix, "/member/list", cases.GenerateGetMemberListCase(i))
+	}
+}
+
+func TestUpdateMemberRoute(t *testing.T) {
+	t.Cleanup(cleanup)
+
+	data.InitDataForUser()
+	data.InitDataForUserOther()
+
+	for _, tc := range cases.UpdateMemberCases {
+		test.AssertCase(t, router, "POST", pathPrefix, "/member/update", tc)
+	}
+}
+
+func BenchmarkUpdateMemberRoute(b *testing.B) {
+	b.Cleanup(cleanup)
+
+	data.InitDataForUser()
+	data.InitDataForUserOther()
+
+	for i := 0; i < b.N; i++ {
+		test.AssertBenchmarkCase(b, router, "POST", pathPrefix, "/member/update", cases.GenerateUpdateMemberCase(i))
+	}
+}
+
+func TestDeleteMemberRoute(t *testing.T) {
+	t.Cleanup(cleanup)
+
+	data.InitDataForUser()
+	data.InitDataForUserOther()
+
+	for _, tc := range cases.DeleteMemberCases {
+		test.AssertCase(t, router, "POST", pathPrefix, "/member/delete", tc)
+	}
+}
+
+func BenchmarkDeleteMemberRoute(b *testing.B) {
+	b.Cleanup(cleanup)
+
+	data.InitDataForUser()
+	data.InitDataForUserOther()
+
+	for i := 0; i < b.N; i++ {
+		test.AssertBenchmarkCase(b, router, "POST", pathPrefix, "/member/delete", cases.GenerateDeleteMemberCase(i))
+	}
+}
