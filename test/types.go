@@ -17,3 +17,18 @@ type GetCourseTest struct {
 	ExpCode int
 	ExpResp vo.GetCourseResponse
 }
+type BindCourseTest struct {
+	Req     vo.BindCourseRequest
+	ExpCode int
+	ExpResp vo.BindCourseResponse
+}
+type UnBindCourseTest struct {
+	Req     vo.UnbindCourseRequest
+	ExpCode int
+	ExpResp vo.UnbindCourseResponse
+}
+type ScheduleTest struct {
+	Req     vo.ScheduleCourseRequest
+	ExpCode int
+	ExpResp vo.ScheduleCourseResponse
+}
