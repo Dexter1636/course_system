@@ -23,6 +23,7 @@ var pathPrefix string
 func setup() {
 	common.InitConfig("test")
 	common.InitDb()
+	common.InitRdb()
 	router = RegisterRouter()
 	pathPrefix = "/api/v1"
 	rand.Seed(10)

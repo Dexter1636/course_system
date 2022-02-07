@@ -8,6 +8,7 @@ import (
 func main() {
 	common.InitConfig("application")
 	common.InitDb()
+	common.InitRdb()
 	r := RegisterRouter()
 	port := viper.GetString("server.port")
 	r.Run("0.0.0.0:" + port) // listen and serve on 0.0.0.0:8080 (for windows "localhost:8080")

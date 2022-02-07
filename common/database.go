@@ -2,6 +2,7 @@ package common
 
 import (
 	"fmt"
+	"github.com/go-redis/redis/v8"
 	"github.com/spf13/viper"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
@@ -9,6 +10,7 @@ import (
 )
 
 var DB *gorm.DB
+var RDB *redis.Client
 
 func InitDb() {
 	// Capture connection properties
@@ -36,6 +38,24 @@ func InitDb() {
 	fmt.Println("Connected to database.")
 }
 
+func InitRdb() {
+	host := viper.GetString("redis.host")
+	port := viper.GetString("redis.port")
+	db := viper.GetString("redis.db")
+	user := viper.GetString("redis.user")
+	password := viper.GetString("redis.password")
+	redisUrl := fmt.Sprintf("redis://%s:%s@%s:%s/%s", user, password, host, port, db)
+	opt, err := redis.ParseURL(redisUrl)
+	if err != nil {
+		panic(err)
+	}
+	RDB = redis.NewClient(opt)
+}
+
 func GetDB() *gorm.DB {
 	return DB
+}
+
+func GetRDB() *redis.Client {
+	return RDB
 }
