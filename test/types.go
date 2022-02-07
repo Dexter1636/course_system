@@ -89,3 +89,40 @@ func (t GetStudentCourseTest) getExpResp() interface{} {
 }
 
 // ===============================
+// ======== User ======== (Create && Get)
+
+type CreateMemberTest struct {
+	Req     vo.CreateMemberRequest
+	ExpCode int
+	ExpResp vo.CreateMemberResponse
+}
+
+type GetMemberTest struct {
+	Req     vo.GetMemberRequest
+	ExpCode int
+	ExpResp vo.GetMemberResponse
+}
+
+func (t CreateMemberTest) getReq() interface{} {
+	return t.Req
+}
+
+func (t CreateMemberTest) getExpCode() interface{} {
+	return t.ExpCode
+}
+
+func (t CreateMemberTest) getExpResp() interface{} {
+	return t.ExpResp
+}
+
+func (t GetMemberTest) getReq() interface{} {
+	return t.Req
+}
+
+func (t GetMemberTest) getExpCode() interface{} {
+	return t.ExpCode
+}
+
+func (t GetMemberTest) getExpResp() interface{} {
+	return t.ExpResp
+}
