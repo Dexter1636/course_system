@@ -53,7 +53,7 @@ func (ctl AuthController) Login(c *gin.Context) {
 	//是否需要校验参数?  指校验用户名以及密码是否符合要求?
 	//直接复制其他同学的user管理里的参数校验了
 	if err := c.ShouldBindJSON(&req); err != nil {
-		code = vo.ParamInvalid
+		code = vo.WrongPassword //修改返回的错误码,220208
 		return
 	}
 	tmpStr := req.Password
@@ -64,7 +64,7 @@ func (ctl AuthController) Login(c *gin.Context) {
 	rp := r1 || r2 || r3
 	if (len(req.Password) > 20 || len(req.Password) < 8 || !rp) ||
 		(len(req.Username) < 8 || len(req.Username) > 20 || !ru) {
-		code = vo.ParamInvalid
+		code = vo.WrongPassword //修改返回的错误码,220208
 		return
 	}
 
@@ -79,7 +79,7 @@ func (ctl AuthController) Login(c *gin.Context) {
 	}
 	//用户已被删除, 文档中未要求, 但感觉应该加上这种情况
 	if user.Enabled == 0 {
-		code = vo.UserHasDeleted
+		code = vo.WrongPassword //修改返回的错误码,220208
 		log.Println("login: user has deleted")
 		return
 	}
