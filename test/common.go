@@ -32,3 +32,9 @@ func AssertBenchmarkCase(b *testing.B, router *gin.Engine, method string, pathPr
 	expResp, _ := json.Marshal(testCase.getExpResp())
 	assert.Equal(b, string(expResp), w.Body.String())
 }
+func AssertCaseCookie(t *testing.T, router *gin.Engine, w *httptest.ResponseRecorder, method string, pathPrefix string, relativePath string, testCase BaseTest) {
+	//w := CallApi(router, method, pathPrefix, relativePath, testCase.getReq())
+	//assert.Equal(t, testCase.getExpCode(), w.Code)
+	expResp, _ := json.Marshal(testCase.getExpResp())
+	assert.Equal(t, string(expResp), w.Body.String())
+}

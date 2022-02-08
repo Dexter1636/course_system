@@ -253,3 +253,60 @@ func (t DeleteMemberTest) getExpCode() interface{} {
 func (t DeleteMemberTest) getExpResp() interface{} {
 	return t.ExpResp
 }
+
+// ======== login ================
+// =====author: bwding============
+
+type LoginTest struct {
+	Req     vo.LoginRequest
+	ExpCode int
+	ExpResp vo.LoginResponse
+}
+
+type LogoutTest struct {
+	Req     string //cookiename?
+	ExpCode int
+	ExpResp vo.LogoutResponse
+}
+
+type WhoAmITest struct {
+	Req     string //cookiename
+	ExpCode int
+	ExpResp vo.WhoAmIResponse
+}
+
+func (t LoginTest) getReq() interface{} {
+	return t.Req
+}
+
+func (t LoginTest) getExpCode() interface{} {
+	return t.ExpCode
+}
+
+func (t LoginTest) getExpResp() interface{} {
+	return t.ExpResp
+}
+
+func (t LogoutTest) getReq() interface{} {
+	return t.Req
+}
+
+func (t LogoutTest) getExpCode() interface{} {
+	return t.ExpCode
+}
+
+func (t LogoutTest) getExpResp() interface{} {
+	return t.ExpResp
+}
+
+func (t WhoAmITest) getReq() interface{} {
+	return t.Req
+}
+
+func (t WhoAmITest) getExpCode() interface{} {
+	return t.ExpCode
+}
+
+func (t WhoAmITest) getExpResp() interface{} {
+	return t.ExpResp
+}
