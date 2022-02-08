@@ -24,24 +24,7 @@ type GetCourseTest struct {
 	ExpResp vo.GetCourseResponse
 }
 
-//<<<<<<< HEAD
-type BindCourseTest struct {
-	Req     vo.BindCourseRequest
-	ExpCode int
-	ExpResp vo.BindCourseResponse
-}
-type UnBindCourseTest struct {
-	Req     vo.UnbindCourseRequest
-	ExpCode int
-	ExpResp vo.UnbindCourseResponse
-}
-type ScheduleTest struct {
-	Req     vo.ScheduleCourseRequest
-	ExpCode int
-	ExpResp vo.ScheduleCourseResponse
-}
-
-//=======
+//<<<<<<< HEAD =======
 
 func (t CreateCourseTest) getReq() interface{} {
 	return t.Req
@@ -67,9 +50,7 @@ func (t GetCourseTest) getExpResp() interface{} {
 	return t.ExpResp
 }
 
-// ===============================
-
-// ======== CourseBooking ========
+// ======================================= CourseBooking ========
 
 type BookCourseTest struct {
 	Req     vo.BookCourseRequest
@@ -144,5 +125,75 @@ func (t GetMemberTest) getExpCode() interface{} {
 
 func (t GetMemberTest) getExpResp() interface{} {
 	return t.ExpResp
-	//>>>>>>> c1e519ec7b8204449ce812d8ffec7399eda33d08
+}
+
+//=======================Schedule Course========================
+
+type BindCourseTest struct {
+	Req     vo.BindCourseRequest
+	ExpCode int
+	ExpResp vo.BindCourseResponse
+}
+type UnBindCourseTest struct {
+	Req     vo.UnbindCourseRequest
+	ExpCode int
+	ExpResp vo.UnbindCourseResponse
+}
+type TGetCourseTests struct {
+	Req     vo.GetTeacherCourseRequest
+	ExpCode int
+	ExpResp vo.GetTeacherCourseResponse
+}
+type ScheduleTest struct {
+	Req     vo.ScheduleCourseRequest
+	ExpCode int
+	ExpResp vo.ScheduleCourseResponse
+}
+
+func (t BindCourseTest) getReq() interface{} {
+	return t.Req
+}
+
+func (t BindCourseTest) getExpCode() interface{} {
+	return t.ExpCode
+}
+
+func (t BindCourseTest) getExpResp() interface{} {
+	return t.ExpResp
+}
+
+func (t UnBindCourseTest) getReq() interface{} {
+	return t.Req
+}
+
+func (t UnBindCourseTest) getExpCode() interface{} {
+	return t.ExpCode
+}
+
+func (t UnBindCourseTest) getExpResp() interface{} {
+	return t.ExpResp
+}
+
+func (t TGetCourseTests) getReq() interface{} {
+	return t.Req
+}
+
+func (t TGetCourseTests) getExpCode() interface{} {
+	return t.ExpCode
+}
+
+func (t TGetCourseTests) getExpResp() interface{} {
+	return t.ExpResp
+}
+
+func (t ScheduleTest) getReq() interface{} {
+	return t.Req
+}
+
+func (t ScheduleTest) getExpCode() interface{} {
+	return t.ExpCode
+}
+
+func (t ScheduleTest) getExpResp() interface{} {
+	return t.ExpResp
 }

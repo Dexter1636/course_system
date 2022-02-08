@@ -6,16 +6,12 @@ import (
 	"course_system/test"
 	"course_system/test/cases"
 	"course_system/test/data"
-	"course_system/vo"
-	"encoding/json"
 	"fmt"
 	"github.com/gin-gonic/gin"
 	"math/rand"
 	"net/http"
 	"net/http/httptest"
 	"os"
-	"strconv"
-	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -181,255 +177,64 @@ func BenchmarkGetMemberRoute(b *testing.B) {
 		test.AssertBenchmarkCase(b, router, "GET", pathPrefix, "/member", cases.GenerateGetMemberCase(i))
 	}
 }
-func TestBindRoute(t *testing.T) {
-	tests := []test.BindCourseTest{
-		{
-			Req: vo.BindCourseRequest{
-				CourseID:  strconv.FormatInt(rand.Int63n(1000), 10),
-				TeacherID: strconv.FormatInt(rand.Int63n(1000), 10),
-			},
-			ExpCode: http.StatusOK,
-			ExpResp: vo.BindCourseResponse{
-				Code: vo.CourseNotExisted,
-			},
-		},
-	}
-	for _, tc := range tests {
-		w := httptest.NewRecorder()
-		body, _ := json.Marshal(tc.Req)
-		req, _ := http.NewRequest("POST", pathPrefix+"/teacher/bind_course", strings.NewReader(string(body)))
-		router.ServeHTTP(w, req)
-		assert.Equal(t, tc.ExpCode, w.Code)
-		var resp vo.BindCourseResponse
-		if err := json.Unmarshal([]byte(w.Body.String()), &resp); err != nil {
-			panic(err.Error())
-		}
-		assert.Equal(t, tc.ExpResp, resp)
-	}
 
+//================Course Schedule=========================
+func TestBindCourseRoute(t *testing.T) {
+	t.Cleanup(cleanup)
+
+	for _, tc := range cases.BindCoruseCases {
+		test.AssertCase(t, router, "POST", pathPrefix, "/teacher/bind_course", tc)
+	}
 }
-func BenchmarkTestBindRoute(b *testing.B) {
+func BenchmarkBindRoute(b *testing.B) {
+	b.Cleanup(cleanup)
+	data.InitDataForCourseCommon()
 	for i := 0; i < b.N; i++ {
-		tests := []test.BindCourseTest{
-			{
-				Req: vo.BindCourseRequest{
-					CourseID:  strconv.FormatInt(rand.Int63n(1000), 10),
-					TeacherID: strconv.FormatInt(rand.Int63n(1000), 10),
-				},
-				ExpCode: http.StatusOK,
-				ExpResp: vo.BindCourseResponse{
-					Code: vo.CourseNotExisted,
-				},
-			},
-		}
-		for _, tc := range tests {
-			w := httptest.NewRecorder()
-			body, _ := json.Marshal(tc.Req)
-			req, _ := http.NewRequest("POST", pathPrefix+"/teacher/bind_course", strings.NewReader(string(body)))
-			router.ServeHTTP(w, req)
-			assert.Equal(b, tc.ExpCode, w.Code)
-			var resp vo.BindCourseResponse
-			if err := json.Unmarshal([]byte(w.Body.String()), &resp); err != nil {
-				panic(err.Error())
-			}
-			assert.Equal(b, tc.ExpResp, resp)
-		}
+		test.AssertBenchmarkCase(b, router, "POST", pathPrefix, "/teacher/bind_course", cases.GenerateBingCase(i))
 	}
 }
-func TestUnBindRoute(t *testing.T) {
-	tests := []test.UnBindCourseTest{
-		{
-			Req: vo.UnbindCourseRequest{
-				CourseID:  strconv.FormatInt(rand.Int63n(1000), 10),
-				TeacherID: strconv.FormatInt(rand.Int63n(1000), 10),
-			},
-			ExpCode: http.StatusOK,
-			ExpResp: vo.UnbindCourseResponse{
-				Code: vo.CourseNotExisted,
-			},
-		},
-	}
-	for _, tc := range tests {
-		w := httptest.NewRecorder()
-		body, _ := json.Marshal(tc.Req)
-		req, _ := http.NewRequest("POST", pathPrefix+"/teacher/unbind_course", strings.NewReader(string(body)))
-		router.ServeHTTP(w, req)
-		assert.Equal(t, tc.ExpCode, w.Code)
-		var resp vo.UnbindCourseResponse
-		if err := json.Unmarshal([]byte(w.Body.String()), &resp); err != nil {
-			panic(err.Error())
-		}
-		assert.Equal(t, tc.ExpResp, resp)
-	}
+func TestUnBindCourseRoute(t *testing.T) {
+	t.Cleanup(cleanup)
 
+	for _, tc := range cases.UnbindCourseCases {
+		test.AssertCase(t, router, "POST", pathPrefix, "/teacher/unbind_course", tc)
+	}
 }
-func BenchmarkTestUnBindRoute(b *testing.B) {
+func BenchmarkUnbindRoute(b *testing.B) {
+	b.Cleanup(cleanup)
+	data.InitDataForUnbing()
 	for i := 0; i < b.N; i++ {
-		tests := []test.UnBindCourseTest{
-			{
-				Req: vo.UnbindCourseRequest{
-					CourseID:  strconv.FormatInt(rand.Int63n(1000), 10),
-					TeacherID: strconv.FormatInt(rand.Int63n(1000), 10),
-				},
-				ExpCode: http.StatusOK,
-				ExpResp: vo.UnbindCourseResponse{
-					Code: vo.CourseNotExisted,
-				},
-			},
-		}
-		for _, tc := range tests {
-			w := httptest.NewRecorder()
-			body, _ := json.Marshal(tc.Req)
-			req, _ := http.NewRequest("POST", pathPrefix+"/teacher/unbind_course", strings.NewReader(string(body)))
-			router.ServeHTTP(w, req)
-			assert.Equal(b, tc.ExpCode, w.Code)
-			var resp vo.UnbindCourseResponse
-			if err := json.Unmarshal([]byte(w.Body.String()), &resp); err != nil {
-				panic(err.Error())
-			}
-			assert.Equal(b, tc.ExpResp, resp)
-		}
+		test.AssertBenchmarkCase(b, router, "POST", pathPrefix, "/teacher/unbind_course", cases.GenerateUnbingCase(i))
 	}
 }
-func TestGetRoute(t *testing.T) {
-	tests := []test.GetCourseTest{
-		{
-			Req: vo.GetCourseRequest{
-				CourseID: strconv.FormatInt(rand.Int63n(1000), 10),
-			},
-			ExpCode: http.StatusOK,
-			ExpResp: vo.GetCourseResponse{
-				Code: vo.OK,
-			},
-		},
-	}
-	for _, tc := range tests {
-		w := httptest.NewRecorder()
-		body, _ := json.Marshal(tc.Req)
-		req, _ := http.NewRequest("GET", pathPrefix+"/teacher/get_course", strings.NewReader(string(body)))
-		router.ServeHTTP(w, req)
-		assert.Equal(t, tc.ExpCode, w.Code)
-		var resp vo.GetCourseResponse
-		if err := json.Unmarshal([]byte(w.Body.String()), &resp); err != nil {
-			panic(err.Error())
-		}
-		assert.Equal(t, tc.ExpResp, resp)
-	}
 
+func TGetCourseRoute(t *testing.T) {
+	t.Cleanup(cleanup)
+
+	for _, tc := range cases.GetTCourseCases {
+		test.AssertCase(t, router, "GET", pathPrefix, "/teacher/get_course", tc)
+	}
 }
-func BenchmarkTestGetRoute(b *testing.B) {
+
+func BenchmarkTGetCourseRoute(b *testing.B) {
+	b.Cleanup(cleanup)
+	data.InitDataForUnbing()
 	for i := 0; i < b.N; i++ {
-		tests := []test.GetCourseTest{
-			{
-				Req: vo.GetCourseRequest{
-					CourseID: strconv.FormatInt(rand.Int63n(1000), 10),
-				},
-				ExpCode: http.StatusOK,
-				ExpResp: vo.GetCourseResponse{
-					Code: vo.OK,
-				},
-			},
-		}
-		for _, tc := range tests {
-			w := httptest.NewRecorder()
-			body, _ := json.Marshal(tc.Req)
-			req, _ := http.NewRequest("GET", pathPrefix+"/teacher/get_course", strings.NewReader(string(body)))
-			router.ServeHTTP(w, req)
-			assert.Equal(b, tc.ExpCode, w.Code)
-			var resp vo.GetCourseResponse
-			if err := json.Unmarshal([]byte(w.Body.String()), &resp); err != nil {
-				panic(err.Error())
-			}
-			assert.Equal(b, tc.ExpResp, resp)
-		}
+		test.AssertBenchmarkCase(b, router, "GET", pathPrefix, "/teacher/get_course", cases.GenerateTGetcourse(i))
 	}
 }
-func TestScheduleRoute(t *testing.T) {
 
-	var data map[string][]string = make(map[string][]string)
-	var ans map[string]string = make(map[string]string)
-	var a = []string{"893", "810"}
-	var b = []string{"893", "114"}
-	var c = []string{"810", "514"}
-	var d = []string{"114"}
+func TestScheduleCourseRoute(t *testing.T) {
+	t.Cleanup(cleanup)
 
-	data["TNOK"] = a
-	data["DB"] = b
-	data["TDN"] = c
-	data["MUR"] = d
-
-	ans["MUR"] = "114"
-	ans["DB"] = "893"
-	ans["TNOK"] = "810"
-	ans["TDN"] = "514"
-
-	tests := []test.ScheduleTest{
-		{
-			Req: vo.ScheduleCourseRequest{
-				TeacherCourseRelationShip: data,
-			},
-			ExpCode: http.StatusOK,
-			ExpResp: vo.ScheduleCourseResponse{
-				Code: vo.OK,
-				Data: ans,
-			},
-		},
-	}
-	for _, tc := range tests {
-		w := httptest.NewRecorder()
-		body, _ := json.Marshal(tc.Req)
-		req, _ := http.NewRequest("POST", pathPrefix+"/course/schedule", strings.NewReader(string(body)))
-		router.ServeHTTP(w, req)
-		assert.Equal(t, tc.ExpCode, w.Code)
-		var resp vo.ScheduleCourseResponse
-		if err := json.Unmarshal([]byte(w.Body.String()), &resp); err != nil {
-			panic(err.Error())
-		}
-		assert.Equal(t, tc.ExpResp, resp)
+	for _, tc := range cases.ScheduleCases {
+		test.AssertCase(t, router, "POST", pathPrefix, "/course/schedule", tc)
 	}
 }
-func BenchmarkTestScheduleRoute(b *testing.B) {
+func BenchmarkScheduleRouter(b *testing.B) {
+	b.Cleanup(cleanup)
+
 	for i := 0; i < b.N; i++ {
-		var data map[string][]string = make(map[string][]string)
-		var ans map[string]string = make(map[string]string)
-		var a = []string{"893", "810"}
-		var B = []string{"893", "114"}
-		var c = []string{"810", "514"}
-		var d = []string{"114"}
-
-		data["TNOK"] = a
-		data["DB"] = B
-		data["TDN"] = c
-		data["MUR"] = d
-
-		ans["MUR"] = "114"
-		ans["DB"] = "893"
-		ans["TNOK"] = "810"
-		ans["TDN"] = "514"
-
-		tests := []test.ScheduleTest{
-			{
-				Req: vo.ScheduleCourseRequest{
-					TeacherCourseRelationShip: data,
-				},
-				ExpCode: http.StatusOK,
-				ExpResp: vo.ScheduleCourseResponse{
-					Code: vo.OK,
-					Data: ans,
-				},
-			},
-		}
-		for _, tc := range tests {
-			w := httptest.NewRecorder()
-			body, _ := json.Marshal(tc.Req)
-			req, _ := http.NewRequest("POST", pathPrefix+"/course/schedule", strings.NewReader(string(body)))
-			router.ServeHTTP(w, req)
-			assert.Equal(b, tc.ExpCode, w.Code)
-			var resp vo.ScheduleCourseResponse
-			if err := json.Unmarshal([]byte(w.Body.String()), &resp); err != nil {
-				panic(err.Error())
-			}
-			assert.Equal(b, tc.ExpResp, resp)
-		}
+		test.AssertBenchmarkCase(b, router, "POST", pathPrefix, "/course/schedule", cases.GenerateSchedule(i))
 	}
 }
