@@ -178,8 +178,6 @@ func BenchmarkGetMemberRoute(b *testing.B) {
 	}
 }
 
-//<<<<<<< HEAD
-
 //=============== User ========
 func TestGetMemberListRoute(t *testing.T) {
 
@@ -245,5 +243,66 @@ func BenchmarkDeleteMemberRoute(b *testing.B) {
 
 	for i := 0; i < b.N; i++ {
 		test.AssertBenchmarkCase(b, router, "POST", pathPrefix, "/member/delete", cases.GenerateDeleteMemberCase(i))
+	}
+}
+
+//================Course Schedule=========================
+func TestBindCourseRoute(t *testing.T) {
+	t.Cleanup(cleanup)
+
+	for _, tc := range cases.BindCoruseCases {
+		test.AssertCase(t, router, "POST", pathPrefix, "/teacher/bind_course", tc)
+	}
+}
+func BenchmarkBindRoute(b *testing.B) {
+	b.Cleanup(cleanup)
+	data.InitDataForCourseCommon()
+	for i := 0; i < b.N; i++ {
+		test.AssertBenchmarkCase(b, router, "POST", pathPrefix, "/teacher/bind_course", cases.GenerateBingCase(i))
+	}
+}
+func TestUnBindCourseRoute(t *testing.T) {
+	t.Cleanup(cleanup)
+
+	for _, tc := range cases.UnbindCourseCases {
+		test.AssertCase(t, router, "POST", pathPrefix, "/teacher/unbind_course", tc)
+	}
+}
+func BenchmarkUnbindRoute(b *testing.B) {
+	b.Cleanup(cleanup)
+	data.InitDataForUnbing()
+	for i := 0; i < b.N; i++ {
+		test.AssertBenchmarkCase(b, router, "POST", pathPrefix, "/teacher/unbind_course", cases.GenerateUnbingCase(i))
+	}
+}
+
+func TGetCourseRoute(t *testing.T) {
+	t.Cleanup(cleanup)
+
+	for _, tc := range cases.GetTCourseCases {
+		test.AssertCase(t, router, "GET", pathPrefix, "/teacher/get_course", tc)
+	}
+}
+
+func BenchmarkTGetCourseRoute(b *testing.B) {
+	b.Cleanup(cleanup)
+	data.InitDataForUnbing()
+	for i := 0; i < b.N; i++ {
+		test.AssertBenchmarkCase(b, router, "GET", pathPrefix, "/teacher/get_course", cases.GenerateTGetcourse(i))
+	}
+}
+
+func TestScheduleCourseRoute(t *testing.T) {
+	t.Cleanup(cleanup)
+
+	for _, tc := range cases.ScheduleCases {
+		test.AssertCase(t, router, "POST", pathPrefix, "/course/schedule", tc)
+	}
+}
+func BenchmarkScheduleRouter(b *testing.B) {
+	b.Cleanup(cleanup)
+
+	for i := 0; i < b.N; i++ {
+		test.AssertBenchmarkCase(b, router, "POST", pathPrefix, "/course/schedule", cases.GenerateSchedule(i))
 	}
 }

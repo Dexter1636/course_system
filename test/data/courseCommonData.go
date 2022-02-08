@@ -42,3 +42,9 @@ func InitDataForUserOther() {
 	common.GetDB().Exec("INSERT INTO user(uuid, user_name, nick_name, password, role_id, enabled) " +
 		"VALUES (0, 'RockyViaviaQ', 'RockyQ', 'RockyPass2022Q', '1', 0)")
 }
+func InitDataForUnbing() {
+	common.GetDB().Exec("INSERT INTO course(name, avail, cap,teacher_id) VALUES ('test1', 1, 1,810)")
+	common.GetDB().Exec("INSERT INTO course(name, avail, cap,teacher_id) VALUES ('test2', 3, 3,893)")
+	common.GetDB().Exec("INSERT INTO course(name, avail, cap,teacher_id) VALUES ('test3', 0, 100,810)")
+	common.GetDB().Exec("INSERT INTO course(name, avail, cap,teacher_id) VALUES ('test4', 100, 100,893)")
+}
