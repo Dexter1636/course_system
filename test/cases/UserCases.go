@@ -63,6 +63,58 @@ var CreateMemberCases = []test.CreateMemberTest{
 			Data: struct{ UserID string }{UserID: "4"},
 		},
 	},
+	{
+		Req: vo.CreateMemberRequest{
+			Nickname: "JudgeAdmin",
+			Username: "JudgeAdmin",
+			Password: "JudgePassword2022",
+			UserType: 1,
+		},
+		ExpCode: http.StatusOK,
+		ExpResp: vo.CreateMemberResponse{
+			Code: vo.UserHasExisted,
+			Data: struct{ UserID string }{UserID: ""},
+		},
+	},
+	{
+		Req: vo.CreateMemberRequest{
+			Nickname: "Alex",
+			Username: "Alexander",
+			Password: "alexanderPass2022",
+			UserType: 3,
+		},
+		ExpCode: http.StatusOK,
+		ExpResp: vo.CreateMemberResponse{
+			Code: vo.UserHasExisted,
+			Data: struct{ UserID string }{UserID: ""},
+		},
+	},
+	{
+		Req: vo.CreateMemberRequest{
+			Nickname: "Benj",
+			Username: "Benjamin",
+			Password: "BenjaminPass2022",
+			UserType: 3,
+		},
+		ExpCode: http.StatusOK,
+		ExpResp: vo.CreateMemberResponse{
+			Code: vo.UserHasExisted,
+			Data: struct{ UserID string }{UserID: ""},
+		},
+	},
+	{
+		Req: vo.CreateMemberRequest{
+			Nickname: "Rocky",
+			Username: "RockyViavia",
+			Password: "RockyPass2022",
+			UserType: 3,
+		},
+		ExpCode: http.StatusOK,
+		ExpResp: vo.CreateMemberResponse{
+			Code: vo.UserHasExisted,
+			Data: struct{ UserID string }{UserID: ""},
+		},
+	},
 }
 
 //生成随机字符串
