@@ -1,7 +1,6 @@
 package main
 
 import (
-	"context"
 	"course_system/common"
 	"course_system/test"
 	"course_system/test/cases"
@@ -25,7 +24,6 @@ var pathPrefix string
 func setup() {
 	common.InitConfig("test")
 	common.InitDb()
-	common.InitRdb(context.Background())
 	router = RegisterRouter()
 	pathPrefix = "/api/v1"
 	rand.Seed(10)
