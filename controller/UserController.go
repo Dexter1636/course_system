@@ -163,6 +163,17 @@ func (ctl UserController) List(c *gin.Context) {
 		panic(err.Error())
 	}
 
+	//Limit忽略时，不能存在Offset参数
+	if req.Limit <= 0 && req.Offset > 0 {
+		c.JSON(http.StatusOK, vo.GetMemberListResponse{
+			Code: vo.ParamInvalid,
+			Data: struct {
+				MemberList []vo.TMember
+			}{MemberList: []vo.TMember{}},
+		})
+		return
+	}
+
 	//查询数据库
 	var users []model.User
 	if err := ctl.DB.Offset(req.Offset).Limit(req.Limit).Find(&users).Error; err != nil {
