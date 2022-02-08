@@ -12,6 +12,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"os"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -243,5 +244,110 @@ func BenchmarkDeleteMemberRoute(b *testing.B) {
 
 	for i := 0; i < b.N; i++ {
 		test.AssertBenchmarkCase(b, router, "POST", pathPrefix, "/member/delete", cases.GenerateDeleteMemberCase(i))
+	}
+}
+
+//=============== login================
+
+func TestLoginRoute(t *testing.T) {
+	t.Cleanup(cleanup)
+	//直接调用
+	data.InitDataForUser()
+	data.InitDataForUserOther()
+
+	for _, tc := range cases.LoginCases {
+		test.AssertCase(t, router, "POST", pathPrefix, "/auth/login", tc)
+	}
+}
+
+func BenchmarkLoginRoute(b *testing.B) {
+	b.Cleanup(cleanup)
+
+	data.InitDataForUser()
+	data.InitDataForUserOther()
+
+	for i := 0; i < b.N; i++ {
+		test.AssertBenchmarkCase(b, router, "POST", pathPrefix, "/auth/login", cases.GenerateLoginCase(i))
+	}
+}
+
+func TestLogoutRoute(t *testing.T) {
+	t.Cleanup(cleanup)
+	////直接调用
+	//data.InitDataForUser()
+	//data.InitDataForUserOther()
+
+	for _, tc := range cases.LogoutCases {
+		token := tc.Req
+		cookie := http.Cookie{
+			Name:       "camp-session",
+			Value:      tc.Req,
+			Path:       "/",
+			Domain:     "180.184.74.137",
+			RawExpires: "",
+			MaxAge:     0,
+			Secure:     false,
+			HttpOnly:   true,
+		}
+		req, _ := http.NewRequest("POST", pathPrefix+"/auth/logout", strings.NewReader(token))
+		req.AddCookie(&cookie)
+		resp := httptest.NewRecorder()
+		router.ServeHTTP(resp, req)
+
+		assert.Equal(t, http.StatusOK, resp.Code)
+		//test.AssertCase(t, router, "POST", pathPrefix, "/auth/logout", tc)
+
+	}
+}
+
+func BenchmarkLogoutRoute(b *testing.B) { //这里不知道怎么搞, 直接返回需要登录
+	b.Cleanup(cleanup)
+
+	data.InitDataForUser()
+	data.InitDataForUserOther()
+
+	for i := 0; i < b.N; i++ {
+		test.AssertBenchmarkCase(b, router, "POST", pathPrefix, "/auth/logout", cases.GenerateLogoutCase(i))
+	}
+}
+
+func TestWhoAmIRoute(t *testing.T) {
+	t.Cleanup(cleanup)
+
+	data.InitDataForUser()
+	data.InitDataForUserOther()
+
+	for _, tc := range cases.WhoAmICases {
+		token := tc.Req
+		cookie := http.Cookie{
+			Name:       "camp-session",
+			Value:      tc.Req,
+			Path:       "/",
+			Domain:     "180.184.74.137",
+			RawExpires: "",
+			MaxAge:     0,
+			Secure:     false,
+			HttpOnly:   true,
+		}
+		req, _ := http.NewRequest("GET", pathPrefix+"/auth/whoami", strings.NewReader(token))
+		req.AddCookie(&cookie)
+		resp := httptest.NewRecorder()
+		router.ServeHTTP(resp, req)
+
+		assert.Equal(t, http.StatusOK, resp.Code)
+		//expResp, _ := json.Marshal(tc)
+		//assert.Equal(t, string(expResp), resp.Body.String())
+		test.AssertCaseCookie(t, router, resp, "GET", pathPrefix, "/auth/whoami", tc)
+	}
+}
+
+func BenchmarkWhoAmI(b *testing.B) {
+	b.Cleanup(cleanup)
+
+	data.InitDataForUser()
+	data.InitDataForUserOther()
+
+	for i := 0; i < b.N; i++ {
+		test.AssertBenchmarkCase(b, router, "GET", pathPrefix, "/auth/whoami", cases.GenerateWhoAmICase(i))
 	}
 }
