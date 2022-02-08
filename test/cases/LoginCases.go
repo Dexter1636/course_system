@@ -27,7 +27,7 @@ var LoginCases = []test.LoginTest{
 		},
 		ExpCode: http.StatusOK,
 		ExpResp: vo.LoginResponse{
-			Code: vo.ParamInvalid,
+			Code: vo.WrongPassword,
 			Data: struct{ UserID string }{UserID: "0"},
 		},
 	},
@@ -38,7 +38,7 @@ var LoginCases = []test.LoginTest{
 		},
 		ExpCode: http.StatusOK,
 		ExpResp: vo.LoginResponse{
-			Code: vo.ParamInvalid,
+			Code: vo.WrongPassword,
 			Data: struct{ UserID string }{UserID: "0"},
 		},
 	},
@@ -49,7 +49,7 @@ var LoginCases = []test.LoginTest{
 		},
 		ExpCode: http.StatusOK,
 		ExpResp: vo.LoginResponse{
-			Code: vo.ParamInvalid,
+			Code: vo.WrongPassword,
 			Data: struct{ UserID string }{UserID: "0"},
 		},
 	},
@@ -71,7 +71,7 @@ var LoginCases = []test.LoginTest{
 		},
 		ExpCode: http.StatusOK,
 		ExpResp: vo.LoginResponse{
-			Code: vo.UserHasDeleted,
+			Code: vo.WrongPassword,
 			Data: struct{ UserID string }{UserID: "5"},
 		},
 	},

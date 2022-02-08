@@ -73,7 +73,7 @@ var CreateMemberCases = []test.CreateMemberTest{
 		ExpCode: http.StatusOK,
 		ExpResp: vo.CreateMemberResponse{
 			Code: vo.UserHasExisted,
-			Data: struct{ UserID string }{UserID: ""},
+			Data: struct{ UserID string }{UserID: "0"},
 		},
 	},
 	{
@@ -86,7 +86,7 @@ var CreateMemberCases = []test.CreateMemberTest{
 		ExpCode: http.StatusOK,
 		ExpResp: vo.CreateMemberResponse{
 			Code: vo.UserHasExisted,
-			Data: struct{ UserID string }{UserID: ""},
+			Data: struct{ UserID string }{UserID: "0"},
 		},
 	},
 	{
@@ -99,7 +99,7 @@ var CreateMemberCases = []test.CreateMemberTest{
 		ExpCode: http.StatusOK,
 		ExpResp: vo.CreateMemberResponse{
 			Code: vo.UserHasExisted,
-			Data: struct{ UserID string }{UserID: ""},
+			Data: struct{ UserID string }{UserID: "0"},
 		},
 	},
 	{
@@ -112,7 +112,7 @@ var CreateMemberCases = []test.CreateMemberTest{
 		ExpCode: http.StatusOK,
 		ExpResp: vo.CreateMemberResponse{
 			Code: vo.UserHasExisted,
-			Data: struct{ UserID string }{UserID: ""},
+			Data: struct{ UserID string }{UserID: "0"},
 		},
 	},
 }
