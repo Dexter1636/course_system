@@ -147,7 +147,7 @@ func TestCreateMemberRoute(t *testing.T) {
 	t.Cleanup(cleanup)
 
 	for _, tc := range cases.CreateMemberCases {
-		test.AssertCase(t, router, "POST", pathPrefix, "/member/create", tc)
+		test.AssertCaseForCreate(t, router, "POST", pathPrefix, "/member/create", tc)
 	}
 }
 
@@ -155,7 +155,7 @@ func BenchmarkCreateMemberRoute(b *testing.B) {
 	b.Cleanup(cleanup)
 
 	for i := 0; i < b.N; i++ {
-		test.AssertBenchmarkCase(b, router, "POST", pathPrefix, "/member/create", cases.GenerateCreateMemberCase(i))
+		test.AssertBenchmarkCaseForCreate(b, router, "POST", pathPrefix, "/member/create", cases.GenerateCreateMemberCase(i))
 	}
 }
 

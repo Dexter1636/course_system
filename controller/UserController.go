@@ -7,7 +7,6 @@ import (
 	"errors"
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
-	"log"
 	"net/http"
 	"regexp"
 	"strconv"
@@ -52,18 +51,8 @@ func (ctl UserController) Create(c *gin.Context) {
 		return
 	}
 	uuidT, err := strconv.ParseInt(cookie, 10, 64)
-	if err := ctl.DB.Where("uuid = ?", uuidT).Take(&user).Error; err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			code = vo.UserNotExisted
-			log.Println("WhoAmI: uuid not existed")
-			return
-		} else {
-			panic(err.Error())
-		}
-	}
-	if user.UserName != "JudgeAdmin" {
+	if uuidT != 1 {
 		code = vo.PermDenied
-		log.Println("Create: PermDenied")
 		return
 	}
 
