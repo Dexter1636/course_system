@@ -21,14 +21,18 @@ type ICourseBookingController interface {
 }
 
 type CourseBookingController struct {
-	repo repository.ICourseRepository
-	DB   *gorm.DB
+	repo            repository.ICourseRepository
+	courseRedisRepo repository.ICourseRedisRepository
+	userRedisRepo   repository.IUserRedisRepository
+	DB              *gorm.DB
 }
 
 func NewCourseBookingController() ICourseBookingController {
 	return CourseBookingController{
-		repo: repository.NewCourseRepository(),
-		DB:   common.GetDB(),
+		repo:            repository.NewCourseRepository(),
+		courseRedisRepo: repository.NewCourseRedisRepository(),
+		userRedisRepo:   repository.NewUserRedisRepository(),
+		DB:              common.GetDB(),
 	}
 }
 
@@ -55,23 +59,34 @@ func (ctl CourseBookingController) BookCourse(c *gin.Context) {
 		return
 	}
 
-	// book course (v1.1: select for update)
+	// book course (v2: cache "course", "sc" and "student" to Redis)
 	// 1. validate student
-	// 2. check course avail
-	// 3. update course avail
-	// 4. create sc record
+	// 2. validate course
+	// 3. update course avail - 1
+	// -> Redis.sc
+	// 4. write new data to MySQL
+	//    - if failed: update course avail + 1
+
+	// 1. validate student
+	code = ctl.userRedisRepo.ValidateStudentByUuid(studentId)
+	if code != vo.OK {
+		return
+	}
+	// TODO: do step 2 and 3 in Lua script
+	// 2. validate course
+	avail := 0
+	code = ctl.courseRedisRepo.GetAvailByCourseId(courseId, &avail)
+	if code != vo.OK {
+		return
+	}
+	if avail <= 0 {
+		code = vo.CourseNotAvailable
+		return
+	}
+	// 3. update course avail - 1
+
+	// 4. write new data to MySQL
 	err = ctl.DB.Transaction(func(tx *gorm.DB) error {
-		// validate student
-		var count int64
-		if err := tx.Model(&model.User{}).Where("uuid = ?", studentId).Count(&count).Error; err != nil {
-			log.Println(err.Error())
-			code = vo.UnknownError
-			return err
-		}
-		if count <= 0 {
-			code = vo.StudentNotExisted
-			return errors.New("StudentNotExisted")
-		}
 		// check avail
 		course := model.Course{Id: courseId}
 		if err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).Select("avail").First(&course, courseId).Error; err != nil {
