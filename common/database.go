@@ -12,6 +12,7 @@ import (
 
 var DB *gorm.DB
 var RDB *redis.Client
+var Ctx context.Context
 
 func InitDb() {
 	// Capture connection properties
@@ -54,6 +55,8 @@ func InitRdb(ctx context.Context) {
 	if pong, err := rdb.Ping(ctx).Result(); err != nil || pong != "PONG" {
 		panic("failed to connect to redis server, err: " + err.Error())
 	}
+	RDB = rdb
+	Ctx = ctx
 	fmt.Println("Connected to redis server.")
 }
 
@@ -63,4 +66,8 @@ func GetDB() *gorm.DB {
 
 func GetRDB() *redis.Client {
 	return RDB
+}
+
+func GetCtx() context.Context {
+	return Ctx
 }
