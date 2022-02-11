@@ -1,11 +1,15 @@
 package controller
 
 import (
+	"context"
 	"course_system/common"
 	"course_system/model"
 	"course_system/vo"
+	"encoding/json"
 	"errors"
+	"fmt"
 	"github.com/gin-gonic/gin"
+	"github.com/go-redis/redis/v8"
 	"gorm.io/gorm"
 	"net/http"
 	"regexp"
@@ -21,12 +25,13 @@ type IUserController interface {
 }
 
 type UserController struct {
-	DB *gorm.DB
+	DB  *gorm.DB
+	RDB *redis.Client
+	Ctx context.Context
 }
 
 func NewUserController() IUserController {
-	db := common.GetDB()
-	return UserController{DB: db}
+	return UserController{DB: common.GetDB(), RDB: common.GetRDB(), Ctx: common.GetCtx()}
 }
 
 func (ctl UserController) Create(c *gin.Context) {
@@ -207,30 +212,66 @@ func (ctl UserController) Update(c *gin.Context) {
 		return
 	}
 
-	var user model.User
-	//检查用户不存在
-	if err := ctl.DB.Take(&user, req.UserID).Error; err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			c.JSON(http.StatusOK, vo.UpdateMemberResponse{Code: vo.UserNotExisted})
-			return
-		} else {
-			panic(err.Error())
-		}
-	}
-
-	//检查用户已删除
-	if user.Enabled == 0 {
-		c.JSON(http.StatusOK, vo.UpdateMemberResponse{Code: vo.UserHasDeleted})
+	val, err := ctl.RDB.Get(ctl.Ctx, fmt.Sprintf("user:%s", req.UserID)).Result()
+	if err == redis.Nil {
+		//用户不存在
+		c.JSON(http.StatusOK, vo.UpdateMemberResponse{Code: vo.UserNotExisted})
 		return
-	}
-
-	//修改用户名
-	if err := ctl.DB.Model(&user).Update("nick_name", req.Nickname).Error; err != nil {
+	} else if err != nil {
+		//Redis错误
+		c.JSON(http.StatusOK, vo.UpdateMemberResponse{Code: vo.UnknownError})
 		panic(err.Error())
+		return
+	} else {
+		var user model.User
+		if err := json.Unmarshal([]byte(val), &user); err != nil {
+			//JSON解析错误
+			c.JSON(http.StatusOK, vo.UpdateMemberResponse{Code: vo.UnknownError})
+			panic(err.Error())
+			return
+		}
+
+		/*检查用户不存在(old)
+		if err := ctl.DB.Take(&user, req.UserID).Error; err != nil {
+			if errors.Is(err, gorm.ErrRecordNotFound) {
+				c.JSON(http.StatusOK, vo.UpdateMemberResponse{Code: vo.UserNotExisted})
+				return
+			} else {
+				panic(err.Error())
+			}
+		}*/
+
+		//检查用户已删除
+		if user.Enabled == 0 {
+			c.JSON(http.StatusOK, vo.UpdateMemberResponse{Code: vo.UserHasDeleted})
+			return
+		}
+
+		//修改用户名
+		user.NickName = req.Nickname
+		val, err := json.Marshal(user)
+		if err != nil {
+			//JSON解析错误
+			c.JSON(http.StatusOK, vo.UpdateMemberResponse{Code: vo.UnknownError})
+			panic(err.Error())
+			return
+		}
+		//存入redis
+		err = ctl.RDB.Set(ctl.Ctx, fmt.Sprintf("user:%d", user.Uuid), val, 0).Err()
+		if err != nil {
+			c.JSON(http.StatusOK, vo.UpdateMemberResponse{Code: vo.UnknownError})
+			panic(err.Error())
+			return
+		}
+		//存入mysql
+		if err := ctl.DB.Model(&user).Update("nick_name", req.Nickname).Error; err != nil {
+			c.JSON(http.StatusOK, vo.UpdateMemberResponse{Code: vo.UnknownError})
+			panic(err.Error())
+			return
+		}
+
+		c.JSON(http.StatusOK, vo.UpdateMemberResponse{Code: vo.OK})
 	}
-
-	c.JSON(http.StatusOK, vo.UpdateMemberResponse{Code: vo.OK})
-
 }
 
 func (ctl UserController) Delete(c *gin.Context) {

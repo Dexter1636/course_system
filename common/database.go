@@ -2,6 +2,8 @@ package common
 
 import (
 	"context"
+	"course_system/model"
+	"encoding/json"
 	"fmt"
 	"github.com/go-redis/redis/v8"
 	"github.com/spf13/viper"
@@ -40,6 +42,26 @@ func InitDb() {
 	fmt.Println("Connected to database.")
 }
 
+func InitRedisData() {
+	//清空数据
+	RDB.FlushAll(Ctx)
+	//读取user表数据
+	var users []model.User
+	if err := DB.Find(&users).Error; err != nil {
+		panic(err.Error())
+	}
+	for _, user := range users {
+		val, err := json.Marshal(user)
+		if err != nil {
+			panic(err.Error())
+		}
+		err = RDB.Set(Ctx, fmt.Sprintf("user:%d", user.Uuid), val, 0).Err()
+		if err != nil {
+			panic(err.Error())
+		}
+	}
+}
+
 func InitRdb(ctx context.Context) {
 	host := viper.GetString("redis.host")
 	port := viper.GetString("redis.port")
@@ -58,6 +80,8 @@ func InitRdb(ctx context.Context) {
 	RDB = rdb
 	Ctx = ctx
 	fmt.Println("Connected to redis server.")
+	InitRedisData()
+	fmt.Println("redis data initialization is complete.")
 }
 
 func GetDB() *gorm.DB {
