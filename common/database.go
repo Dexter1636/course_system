@@ -60,6 +60,32 @@ func InitRedisData() {
 			panic(err.Error())
 		}
 	}
+	//读取course表数据
+	var courses []model.Course
+	if err := DB.Find(&courses).Error; err != nil {
+		panic(err.Error())
+	}
+	for _, course := range courses {
+		val, err := json.Marshal(course)
+		if err != nil {
+			panic(err.Error())
+		}
+		err = RDB.Set(Ctx, fmt.Sprintf("course:%d", course.Id), val, 0).Err()
+		if err != nil {
+			panic(err.Error())
+		}
+	}
+	//读取sc表数据
+	var scs []model.Sc
+	if err := DB.Find(&scs).Error; err != nil {
+		panic(err.Error())
+	}
+	for _, sc := range scs {
+		err := RDB.SAdd(Ctx, fmt.Sprintf("sc:%d", sc.StudentId), sc.CourseId, 0).Err()
+		if err != nil {
+			panic(err.Error())
+		}
+	}
 }
 
 func InitRdb(ctx context.Context) {

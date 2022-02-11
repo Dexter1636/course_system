@@ -291,7 +291,7 @@ func (ctl UserController) Delete(c *gin.Context) {
 			panic(err.Error())
 		}
 	}
-	//text
+
 	//检查用户已删除
 	if user.Enabled == 0 {
 		c.JSON(http.StatusOK, vo.DeleteMemberResponse{Code: vo.UserHasDeleted})
