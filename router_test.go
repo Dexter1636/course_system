@@ -25,11 +25,11 @@ var pathPrefix string
 func setup() {
 	common.InitConfig("test")
 	common.InitDb()
+	cleanup()
 	common.InitRdb(context.Background())
 	router = RegisterRouter()
 	pathPrefix = "/api/v1"
 	rand.Seed(10)
-	cleanup()
 }
 
 // after all

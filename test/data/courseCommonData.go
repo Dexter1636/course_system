@@ -17,6 +17,8 @@ func InitDataForCourseCommon() {
 	common.GetDB().Exec("INSERT INTO course(name, avail, cap) VALUES ('test2', 3, 3)")
 	common.GetDB().Exec("INSERT INTO course(name, avail, cap) VALUES ('test3', 0, 100)")
 	common.GetDB().Exec("INSERT INTO course(name, avail, cap) VALUES ('test4', 100, 100)")
+
+	common.InitRedisData()
 }
 
 func InitDataForUser() {
@@ -29,6 +31,7 @@ func InitDataForUser() {
 		"VALUES (0, 'Benjamin', 'Benj', 'BenjaminPass2022', '3', 1)")
 	common.GetDB().Exec("INSERT INTO user(uuid, user_name, nick_name, password, role_id, enabled) " +
 		"VALUES (0, 'RockyViavia', 'Rocky', 'RockyPass2022', '3', 1)")
+	common.InitRedisData()
 }
 
 func InitDataForUserOther() {
@@ -41,10 +44,12 @@ func InitDataForUserOther() {
 		"VALUES (0, 'BenjaminQ', 'BenjQ', 'BenjaminPass2022Q', '2', 0)")
 	common.GetDB().Exec("INSERT INTO user(uuid, user_name, nick_name, password, role_id, enabled) " +
 		"VALUES (0, 'RockyViaviaQ', 'RockyQ', 'RockyPass2022Q', '1', 0)")
+	common.InitRedisData()
 }
 func InitDataForUnbing() {
 	common.GetDB().Exec("INSERT INTO course(name, avail, cap,teacher_id) VALUES ('test1', 1, 1,810)")
 	common.GetDB().Exec("INSERT INTO course(name, avail, cap,teacher_id) VALUES ('test2', 3, 3,893)")
 	common.GetDB().Exec("INSERT INTO course(name, avail, cap,teacher_id) VALUES ('test3', 0, 100,810)")
 	common.GetDB().Exec("INSERT INTO course(name, avail, cap,teacher_id) VALUES ('test4', 100, 100,893)")
+	common.InitRedisData()
 }
