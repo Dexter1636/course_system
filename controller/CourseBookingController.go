@@ -6,10 +6,13 @@ import (
 	"course_system/model"
 	"course_system/repository"
 	"course_system/vo"
+	"errors"
 	"fmt"
 	"github.com/gin-gonic/gin"
 	"github.com/go-redis/redis/v8"
+	"github.com/go-sql-driver/mysql"
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 	"log"
 	"net/http"
 	"strconv"
@@ -123,57 +126,57 @@ func (ctl CourseBookingController) BookCourse(c *gin.Context) {
 	fmt.Println(codeInt)
 	code = vo.ErrNo(codeInt)
 
-	//// 5. write new data to MySQL
-	//if code == vo.OK {
-	//	err = ctl.DB.Transaction(func(tx *gorm.DB) error {
-	//		// check avail
-	//		course := model.Course{Id: courseId}
-	//		if err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).Select("avail").First(&course, courseId).Error; err != nil {
-	//			log.Println(err.Error())
-	//			if errors.Is(err, gorm.ErrRecordNotFound) {
-	//				code = vo.CourseNotExisted
-	//			} else {
-	//				code = vo.UnknownError
-	//			}
-	//			return err
-	//		}
-	//		if course.Avail <= 0 {
-	//			code = vo.CourseNotAvailable
-	//			return errors.New("CourseNotAvailable")
-	//		}
-	//		// update avail
-	//		course.Avail--
-	//		if err := tx.Model(&course).Update("avail", course.Avail).Error; err != nil {
-	//			log.Println(err.Error())
-	//			code = vo.UnknownError
-	//			return err
-	//		}
-	//		// create sc record
-	//		sc := model.Sc{
-	//			StudentId: studentId,
-	//			CourseId:  courseId,
-	//		}
-	//		if err := tx.Create(&sc).Error; err != nil {
-	//			log.Println(err.Error())
-	//			var mysqlErr *mysql.MySQLError
-	//			if errors.As(err, &mysqlErr) && mysqlErr.Number == 1062 { // student already have this course
-	//				code = vo.StudentHasCourse
-	//			} else {
-	//				code = vo.UnknownError
-	//			}
-	//			return err
-	//		}
-	//		return nil
-	//	})
-	//	if err != nil {
-	//		log.Println(err.Error())
-	//		// rollback Redis data
-	//		if resCode := ctl.scRedisRepo.DeleteSc(studentId, courseId); resCode == vo.UnknownError {
-	//			code = resCode
-	//		}
-	//		return
-	//	}
-	//}
+	// 5. write new data to MySQL
+	if code == vo.OK {
+		err = ctl.DB.Transaction(func(tx *gorm.DB) error {
+			// check avail
+			course := model.Course{Id: courseId}
+			if err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).Select("avail").First(&course, courseId).Error; err != nil {
+				log.Println(err.Error())
+				if errors.Is(err, gorm.ErrRecordNotFound) {
+					code = vo.CourseNotExisted
+				} else {
+					code = vo.UnknownError
+				}
+				return err
+			}
+			if course.Avail <= 0 {
+				code = vo.CourseNotAvailable
+				return errors.New("CourseNotAvailable")
+			}
+			// update avail
+			course.Avail--
+			if err := tx.Model(&course).Update("avail", course.Avail).Error; err != nil {
+				log.Println(err.Error())
+				code = vo.UnknownError
+				return err
+			}
+			// create sc record
+			sc := model.Sc{
+				StudentId: studentId,
+				CourseId:  courseId,
+			}
+			if err := tx.Create(&sc).Error; err != nil {
+				log.Println(err.Error())
+				var mysqlErr *mysql.MySQLError
+				if errors.As(err, &mysqlErr) && mysqlErr.Number == 1062 { // student already have this course
+					code = vo.StudentHasCourse
+				} else {
+					code = vo.UnknownError
+				}
+				return err
+			}
+			return nil
+		})
+		if err != nil {
+			log.Println(err.Error())
+			// rollback Redis data
+			if resCode := ctl.scRedisRepo.DeleteSc(studentId, courseId); resCode == vo.UnknownError {
+				code = resCode
+			}
+			return
+		}
+	}
 
 }
 
