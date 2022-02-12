@@ -1,11 +1,15 @@
 package controller
 
 import (
+	"context"
 	"course_system/common"
 	"course_system/model"
 	"course_system/vo"
+	"encoding/json"
 	"errors"
+	"fmt"
 	"github.com/gin-gonic/gin"
+	"github.com/go-redis/redis/v8"
 	"gorm.io/gorm"
 	"log"
 	"net/http"
@@ -19,14 +23,18 @@ type IAuthController interface {
 	WhoAmI(c *gin.Context)
 }
 
+//方便修改cooki域名
+var ckdomain string = "0.0.0.0"
+
 type AuthController struct {
-	DB *gorm.DB
+	DB  *gorm.DB
+	RDB *redis.Client
+	Ctx context.Context
 }
 
 //连接数据库
 func NewAuthController() IAuthController {
-	db := common.GetDB()
-	return AuthController{DB: db}
+	return AuthController{DB: common.GetDB(), RDB: common.GetRDB(), Ctx: common.GetCtx()}
 }
 
 //用户输入账号和密码后点击登录
@@ -35,7 +43,7 @@ func NewAuthController() IAuthController {
 //登录成功后需要设置 Cookie，Cookie 名称为 camp-session。
 //response: ErrNo, UserID
 func (ctl AuthController) Login(c *gin.Context) {
-
+	//POST方法，传参使用json，无需修改
 	var req vo.LoginRequest
 	var user model.User
 	code := vo.OK
@@ -50,8 +58,7 @@ func (ctl AuthController) Login(c *gin.Context) {
 		})
 	}()
 
-	//是否需要校验参数?  指校验用户名以及密码是否符合要求?
-	//直接复制其他同学的user管理里的参数校验了
+	//校验参数， 用户名、密码是否符合要求
 	if err := c.ShouldBindJSON(&req); err != nil {
 		code = vo.WrongPassword //修改返回的错误码,220208
 		return
@@ -68,7 +75,7 @@ func (ctl AuthController) Login(c *gin.Context) {
 		return
 	}
 
-	//查询, 用户名或者密码错误均返回密码错误, WrongPassword
+	//login登录的参数为用户名和密码，不知uuid，直接上mysql查询
 	//根据用户名查询, 无用户
 	if err := ctl.DB.Where("user_name = ?", req.Username).Take(&user).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -90,15 +97,14 @@ func (ctl AuthController) Login(c *gin.Context) {
 		return
 	}
 
-	//设置cookie, 不知道对不对嗷
-	c.SetCookie("camp-session", strconv.FormatInt(user.Uuid, 10), 0, "/", "180.184.74.137", false, true)
+	//设置cookie，存储uuid
+	c.SetCookie("camp-session", strconv.FormatInt(user.Uuid, 10), 0, "/", ckdomain, false, true)
 
 }
 
 //当用户点击退出按钮，销毁当前用户 Session 和认证 Cookie
 //登出后清除相应的 Cookie。
 func (ctl AuthController) Logout(c *gin.Context) {
-	//var user model.User
 	code := vo.OK
 
 	//response, ErrNo
@@ -116,7 +122,7 @@ func (ctl AuthController) Logout(c *gin.Context) {
 		return
 	}
 	//将cookie的maxage设置为-1
-	c.SetCookie("camp-session", "", -1, "/", "180.184.74.137", false, true)
+	c.SetCookie("camp-session", "", -1, "/", ckdomain, false, true)
 }
 
 //登录后访问个人信息页可以查看自己的信息，包括用户ID、用户名称、用户昵称。
@@ -148,14 +154,39 @@ func (ctl AuthController) WhoAmI(c *gin.Context) {
 		return
 	}
 	//有cookie, 根据存的Uuid获取信息
-	uuidT, err := strconv.ParseInt(cookie, 10, 64)
-	if err := ctl.DB.Where("uuid = ?", uuidT).Take(&user).Error; err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			code = vo.UserNotExisted
-			log.Println("WhoAmI: uuid not existed")
-			return
-		} else {
+	//uuidT, err := strconv.ParseInt(cookie, 10, 64)
+	//if err := ctl.DB.Where("uuid = ?", uuidT).Take(&user).Error; err != nil {
+	//	if errors.Is(err, gorm.ErrRecordNotFound) {
+	//		code = vo.UserNotExisted
+	//		log.Println("WhoAmI: uuid not existed")
+	//		return
+	//	} else {
+	//		panic(err.Error())
+	//	}
+	//}
+	//rdbreq := fmt.Sprintf("user:%s", cookie)
+	val, err := ctl.RDB.Get(ctl.Ctx, fmt.Sprintf("user:%s", cookie)).Result()
+	if err == redis.Nil {
+		//用户不存在
+		code = vo.UserNotExisted
+		return
+	} else if err != nil {
+		//Redis错误
+		code = vo.UnknownError
+		panic(err.Error())
+		return
+	} else {
+		if err := json.Unmarshal([]byte(val), &user); err != nil {
+			//JSON解析错误
+			code = vo.UnknownError
 			panic(err.Error())
+			return
 		}
+
+		if user.Enabled == 0 {
+			code = vo.UserHasDeleted
+			return
+		}
+
 	}
 }
