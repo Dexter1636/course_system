@@ -153,9 +153,17 @@ func (ctl UserController) Member(c *gin.Context) {
 func (ctl UserController) List(c *gin.Context) {
 	var req vo.GetMemberListRequest
 
-	if err := c.ShouldBindJSON(&req); err != nil {
+	//读取数据
+	val, err := strconv.Atoi(c.Query("Limit"))
+	if err != nil {
 		panic(err.Error())
 	}
+	req.Limit = val
+	val, err = strconv.Atoi(c.Query("Offset"))
+	if err != nil {
+		panic(err.Error())
+	}
+	req.Offset = val
 
 	//Limit忽略时，不能存在Offset参数
 	if req.Limit <= 0 && req.Offset > 0 {
@@ -281,28 +289,54 @@ func (ctl UserController) Delete(c *gin.Context) {
 		panic(err.Error())
 	}
 
-	var user model.User
-	//检查用户不存在
-	if err := ctl.DB.Take(&user, req.UserID).Error; err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			c.JSON(http.StatusOK, vo.DeleteMemberResponse{Code: vo.UserNotExisted})
-			return
-		} else {
-			panic(err.Error())
-		}
-	}
-
-	//检查用户已删除
-	if user.Enabled == 0 {
-		c.JSON(http.StatusOK, vo.DeleteMemberResponse{Code: vo.UserHasDeleted})
+	val, err := ctl.RDB.Get(ctl.Ctx, fmt.Sprintf("user:%s", req.UserID)).Result()
+	if err == redis.Nil {
+		//用户不存在
+		c.JSON(http.StatusOK, vo.DeleteMemberResponse{Code: vo.UserNotExisted})
 		return
-	}
-
-	//删除用户，将状态设置为0
-	if err := ctl.DB.Model(&user).Update("enabled", "0").Error; err != nil {
+	} else if err != nil {
+		//Redis错误
+		c.JSON(http.StatusOK, vo.DeleteMemberResponse{Code: vo.UnknownError})
 		panic(err.Error())
+		return
+	} else {
+		var user model.User
+		if err := json.Unmarshal([]byte(val), &user); err != nil {
+			//JSON解析错误
+			c.JSON(http.StatusOK, vo.DeleteMemberResponse{Code: vo.UnknownError})
+			panic(err.Error())
+			return
+		}
+
+		//检查用户已删除
+		if user.Enabled == 0 {
+			c.JSON(http.StatusOK, vo.DeleteMemberResponse{Code: vo.UserHasDeleted})
+			return
+		}
+
+		//删除用户，将状态设置为0
+		user.Enabled = 0
+		val, err := json.Marshal(user)
+		if err != nil {
+			//JSON解析错误
+			c.JSON(http.StatusOK, vo.DeleteMemberResponse{Code: vo.UnknownError})
+			panic(err.Error())
+			return
+		}
+		//存入redis
+		err = ctl.RDB.Set(ctl.Ctx, fmt.Sprintf("user:%d", user.Uuid), val, 0).Err()
+		if err != nil {
+			c.JSON(http.StatusOK, vo.DeleteMemberResponse{Code: vo.UnknownError})
+			panic(err.Error())
+			return
+		}
+		//存入mysql
+		if err := ctl.DB.Model(&user).Update("enabled", "0").Error; err != nil {
+			c.JSON(http.StatusOK, vo.DeleteMemberResponse{Code: vo.UnknownError})
+			panic(err.Error())
+			return
+		}
+
+		c.JSON(http.StatusOK, vo.DeleteMemberResponse{Code: vo.OK})
 	}
-
-	c.JSON(http.StatusOK, vo.DeleteMemberResponse{Code: vo.OK})
-
 }
