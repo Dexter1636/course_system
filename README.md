@@ -17,9 +17,9 @@ This is the project of Group 28 for ByteCamp 2022 Winter.
     go mod download
     ```
 
-3. Add application config file.
+3. Add application config file and test config file.
     
-    Write the following code to `course_system/config/application.yaml`:
+    Write the following code to your `course_system/config/application.yaml`:
     
     ```yaml
     server:
@@ -33,7 +33,19 @@ This is the project of Group 28 for ByteCamp 2022 Winter.
       username: <username>
       password: <password>
       charset: utf8
+   
+   redis:
+      host: <hostname>
+      port: <port>
+      db: <db>
+      user: <username>
+      password: <password>
+    
+    logger:
+      level: info
     ```
+   
+    And the same for `course_system/config/test.yaml`, which is used for testing.
 
 4. Run.
     
@@ -54,4 +66,4 @@ This is the project of Group 28 for ByteCamp 2022 Winter.
     git push --set-upstream origin <your_branch_name>
     ```
    
-2. Do NOT track `application.yaml` since it contains sensitive data.
+2. Do NOT track `application.yaml` and `test.yaml` since it contains sensitive data.
