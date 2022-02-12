@@ -1,12 +1,15 @@
 package controller
 
 import (
+	"context"
 	"course_system/common"
 	"course_system/model"
 	"course_system/repository"
 	"course_system/vo"
 	"errors"
+	"fmt"
 	"github.com/gin-gonic/gin"
+	"github.com/go-redis/redis/v8"
 	"github.com/go-sql-driver/mysql"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
@@ -25,6 +28,8 @@ type CourseBookingController struct {
 	courseRedisRepo repository.ICourseRedisRepository
 	userRedisRepo   repository.IUserRedisRepository
 	DB              *gorm.DB
+	RDB             *redis.Client
+	ctx             context.Context
 }
 
 func NewCourseBookingController() ICourseBookingController {
@@ -33,6 +38,8 @@ func NewCourseBookingController() ICourseBookingController {
 		courseRedisRepo: repository.NewCourseRedisRepository(),
 		userRedisRepo:   repository.NewUserRedisRepository(),
 		DB:              common.GetDB(),
+		RDB:             common.GetRDB(),
+		ctx:             common.GetCtx(),
 	}
 }
 
@@ -73,6 +80,24 @@ func (ctl CourseBookingController) BookCourse(c *gin.Context) {
 		return
 	}
 	// TODO: do step 2 and 3 in Lua script
+	keys := []string{"my_counter"}
+	values := []interface{}{+1}
+	var incrBy = redis.NewScript(`
+		local key = KEYS[1]
+		local change = ARGV[1]
+		
+		local value = redis.call("GET", key)
+		if not value then
+		  value = 0
+		end
+		
+		value = value + change
+		redis.call("SET", key, value)
+		
+		return value
+		`)
+	num, err := incrBy.Run(ctl.ctx, ctl.RDB, keys, values...).Int()
+	fmt.Println(num)
 	// 2. validate course
 	avail := 0
 	code = ctl.courseRedisRepo.GetAvailByCourseId(courseId, &avail)
