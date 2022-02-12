@@ -24,7 +24,8 @@ type IAuthController interface {
 }
 
 //方便修改cooki域名
-var ckdomain string = "0.0.0.0"
+//var ckdomain string = "0.0.0.0"
+var ckdomain string = "180.184.74.137"
 
 type AuthController struct {
 	DB  *gorm.DB
