@@ -175,12 +175,26 @@ func (ctl UserController) List(c *gin.Context) {
 	//读取数据
 	val, err := strconv.Atoi(c.Query("Limit"))
 	if err != nil {
+		c.JSON(http.StatusOK, vo.GetMemberListResponse{
+			Code: vo.UnknownError,
+			Data: struct {
+				MemberList []vo.TMember
+			}{MemberList: []vo.TMember{}},
+		})
 		panic(err.Error())
+		return
 	}
 	req.Limit = val
 	val, err = strconv.Atoi(c.Query("Offset"))
 	if err != nil {
+		c.JSON(http.StatusOK, vo.GetMemberListResponse{
+			Code: vo.UnknownError,
+			Data: struct {
+				MemberList []vo.TMember
+			}{MemberList: []vo.TMember{}},
+		})
 		panic(err.Error())
+		return
 	}
 	req.Offset = val
 
@@ -198,7 +212,14 @@ func (ctl UserController) List(c *gin.Context) {
 	//查询数据库
 	var users []model.User
 	if err := ctl.DB.Offset(req.Offset).Limit(req.Limit).Find(&users).Error; err != nil {
+		c.JSON(http.StatusOK, vo.GetMemberListResponse{
+			Code: vo.UnknownError,
+			Data: struct {
+				MemberList []vo.TMember
+			}{MemberList: []vo.TMember{}},
+		})
 		panic(err.Error())
+		return
 	}
 
 	//获取数据
@@ -206,7 +227,14 @@ func (ctl UserController) List(c *gin.Context) {
 	for i := 0; i < len(users); i++ {
 		UserType, err := strconv.Atoi(users[i].RoleId)
 		if err != nil {
+			c.JSON(http.StatusOK, vo.GetMemberListResponse{
+				Code: vo.UnknownError,
+				Data: struct {
+					MemberList []vo.TMember
+				}{MemberList: []vo.TMember{}},
+			})
 			panic(err.Error())
+			return
 		}
 		MemberList = append(MemberList, vo.TMember{
 			UserID: strconv.FormatInt(users[i].Uuid, 10), Nickname: users[i].NickName, Username: users[i].UserName, UserType: vo.UserType(UserType)})
@@ -230,7 +258,9 @@ func (ctl UserController) Update(c *gin.Context) {
 	var req vo.UpdateMemberRequest
 
 	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusOK, vo.UpdateMemberResponse{Code: vo.UnknownError})
 		panic(err.Error())
+		return
 	}
 
 	//检查数据合法性
@@ -305,7 +335,9 @@ func (ctl UserController) Delete(c *gin.Context) {
 	var req vo.DeleteMemberRequest
 
 	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusOK, vo.DeleteMemberResponse{Code: vo.UnknownError})
 		panic(err.Error())
+		return
 	}
 
 	val, err := ctl.RDB.Get(ctl.Ctx, fmt.Sprintf("user:%s", req.UserID)).Result()
