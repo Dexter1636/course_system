@@ -76,12 +76,14 @@ func (ctl AuthController) Login(c *gin.Context) {
 		return
 	}
 
-	//login登录的参数为用户名和密码，不知uuid，直接上mysql查询
 	//根据用户名查询, 无用户
 	if err := ctl.DB.Where("user_name = ?", req.Username).Take(&user).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			code = vo.WrongPassword
 			log.Println("login: no such user")
+			return
+		} else {
+			code = vo.UnknownError
 			return
 		}
 	}
