@@ -66,4 +66,4 @@ This is the project of Group 28 for ByteCamp 2022 Winter.
     git push --set-upstream origin <your_branch_name>
     ```
    
-2. Do NOT track `application.yaml` and `test.yaml` since it contains sensitive data.
+2. Do NOT track `application.yaml` and `test.yaml` since they contain sensitive data.
