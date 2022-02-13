@@ -81,10 +81,11 @@ func (ctl CourseScheduleController) Unbind(c *gin.Context) {
 }
 func (ctl CourseScheduleController) Get(c *gin.Context) {
 	var req vo.GetTeacherCourseRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusOK, vo.GetTeacherCourseResponse{Code: vo.ParamInvalid})
-		return
-	}
+	//if err := c.ShouldBindJSON(&req); err != nil {
+	//	c.JSON(http.StatusOK, vo.GetTeacherCourseResponse{Code: vo.ParamInvalid})
+	//	return
+	//}
+	req.TeacherID = c.Query("TeacherID")
 	number, err := strconv.ParseInt(req.TeacherID, 10, 64)
 	if err != nil {
 		c.JSON(http.StatusOK, vo.GetTeacherCourseResponse{Code: vo.ParamInvalid})
