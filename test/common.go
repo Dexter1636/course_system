@@ -1,11 +1,14 @@
 package test
 
 import (
+	"course_system/common"
+	"course_system/model"
 	"encoding/json"
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/assert"
 	"net/http"
 	"net/http/httptest"
+	"strconv"
 	"strings"
 	"testing"
 )
@@ -42,9 +45,13 @@ func AssertCaseCookie(t *testing.T, router *gin.Engine, w *httptest.ResponseReco
 // UserTest with author check
 
 func CallApiAndAddCookie(router *gin.Engine, method string, pathPrefix string, relativePath string, reqData interface{}) (w *httptest.ResponseRecorder) {
+	var user model.User
+	if err := common.DB.Where("username = ?", "JudgeAdmin").Take(&user).Error; err != nil {
+		panic(err.Error())
+	}
 	cookie := http.Cookie{
 		Name:       "camp-session",
-		Value:      "1",
+		Value:      strconv.FormatInt(user.Uuid, 10),
 		Path:       "/",
 		Domain:     "180.184.74.137",
 		RawExpires: "",
