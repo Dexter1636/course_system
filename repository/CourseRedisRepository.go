@@ -6,7 +6,6 @@ import (
 	"course_system/vo"
 	"fmt"
 	"github.com/go-redis/redis/v8"
-	"gorm.io/gorm"
 	"log"
 	"strconv"
 )
@@ -16,13 +15,12 @@ type ICourseRedisRepository interface {
 }
 
 type CourseRedisRepository struct {
-	DB  *gorm.DB
 	RDB *redis.Client
 	Ctx context.Context
 }
 
 func NewCourseRedisRepository() ICourseRedisRepository {
-	return CourseRedisRepository{DB: common.GetDB(), RDB: common.GetRDB(), Ctx: common.GetCtx()}
+	return CourseRedisRepository{RDB: common.GetRDB(), Ctx: common.GetCtx()}
 }
 
 func (crr CourseRedisRepository) GetAvailByCourseId(id int64, avail *int) (code vo.ErrNo) {

@@ -44,7 +44,7 @@ func InitDb() {
 
 func InitRedisData() {
 	//清空数据
-	RDB.FlushAll(Ctx)
+	RDB.FlushDB(Ctx)
 	//读取user表数据
 	var users []model.User
 	if err := DB.Find(&users).Error; err != nil {

@@ -188,7 +188,7 @@ func TestGetMemberListRoute(t *testing.T) {
 	data.InitDataForUserOther()
 
 	for _, tc := range cases.GetMemberListCases {
-		test.AssertCase(t, router, "GET", pathPrefix, "/member/list", tc)
+		test.AssertCase(t, router, "GET", pathPrefix, "/member/list"+fmt.Sprintf("?Offset=%d&Limit=%d", tc.Req.Offset, tc.Req.Limit), tc)
 	}
 }
 
@@ -199,7 +199,8 @@ func BenchmarkGetMemberListRoute(b *testing.B) {
 	data.InitDataForUserOther()
 
 	for i := 0; i < b.N; i++ {
-		test.AssertBenchmarkCase(b, router, "GET", pathPrefix, "/member/list", cases.GenerateGetMemberListCase(i))
+		tc := cases.GenerateGetMemberListCase(i)
+		test.AssertBenchmarkCase(b, router, "GET", pathPrefix, "/member/list"+fmt.Sprintf("?Offset=%d&Limit=%d", tc.Req.Offset, tc.Req.Limit), tc)
 	}
 }
 
