@@ -39,9 +39,6 @@ func (ctl UserController) Create(c *gin.Context) {
 	var req vo.CreateMemberRequest
 	var user, u model.User
 	code := vo.OK
-	if err := c.ShouldBindJSON(&req); err != nil {
-		panic(err.Error())
-	}
 
 	defer func() {
 		c.JSON(http.StatusOK, vo.CreateMemberResponse{
@@ -49,6 +46,12 @@ func (ctl UserController) Create(c *gin.Context) {
 			Data: struct{ UserID string }{UserID: strconv.FormatInt(user.Uuid, 10)},
 		})
 	}()
+
+	if err := c.ShouldBindJSON(&req); err != nil {
+		code = vo.UnknownError
+		panic(err.Error())
+		return
+	}
 
 	//权限检查
 	cookie, err := c.Cookie("camp-session")
@@ -63,7 +66,9 @@ func (ctl UserController) Create(c *gin.Context) {
 			log.Println("Create: uuid not existed")
 			return
 		} else {
+			code = vo.UnknownError
 			panic(err.Error())
+			return
 		}
 	}
 	if user.UserName != "JudgeAdmin" {
@@ -111,7 +116,9 @@ func (ctl UserController) Create(c *gin.Context) {
 			}
 			return
 		} else {
+			code = vo.UnknownError
 			panic(err.Error())
+			return
 		}
 	}
 
