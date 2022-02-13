@@ -95,6 +95,20 @@ func (ctl UserController) Create(c *gin.Context) {
 	if err := ctl.DB.Where("user_name = ?", req.Username).Take(&u).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			ctl.DB.Create(&user)
+			val, err := json.Marshal(user)
+			if err != nil {
+				//JSON解析错误
+				code = vo.UnknownError
+				panic(err.Error())
+				return
+			}
+			//存入redis
+			err = ctl.RDB.Set(ctl.Ctx, fmt.Sprintf("user:%d", user.Uuid), val, 0).Err()
+			if err != nil {
+				code = vo.UnknownError
+				panic(err.Error())
+				return
+			}
 			return
 		} else {
 			panic(err.Error())
@@ -107,6 +121,20 @@ func (ctl UserController) Create(c *gin.Context) {
 }
 
 func (ctl UserController) Member(c *gin.Context) {
+	code := vo.OK
+	var user model.User
+	defer func() {
+		RoleID, _ := strconv.Atoi(user.RoleId)
+		c.JSON(http.StatusOK, vo.GetMemberResponse{
+			Code: code,
+			Data: struct {
+				UserID   string
+				Nickname string
+				Username string
+				UserType vo.UserType
+			}{UserID: strconv.FormatInt(user.Uuid, 10), Nickname: user.NickName, Username: user.UserName, UserType: vo.UserType(RoleID)},
+		})
+	}()
 	var req vo.GetMemberRequest
 
 	val := c.Query("UserID")
@@ -115,39 +143,28 @@ func (ctl UserController) Member(c *gin.Context) {
 	val, err := ctl.RDB.Get(ctl.Ctx, fmt.Sprintf("user:%s", req.UserID)).Result()
 	if err == redis.Nil {
 		//用户不存在
-		c.JSON(http.StatusOK, vo.UpdateMemberResponse{Code: vo.UserNotExisted})
+		code = vo.UserNotExisted
 		return
 	} else if err != nil {
 		//Redis错误
-		c.JSON(http.StatusOK, vo.UpdateMemberResponse{Code: vo.UnknownError})
+		code = vo.UnknownError
 		panic(err.Error())
 		return
 	} else {
-		var user model.User
 		if err := json.Unmarshal([]byte(val), &user); err != nil {
 			//JSON解析错误
-			c.JSON(http.StatusOK, vo.UpdateMemberResponse{Code: vo.UnknownError})
+			code = vo.UnknownError
 			panic(err.Error())
 			return
 		}
 
 		//检查用户已删除
 		if user.Enabled == 0 {
-			c.JSON(http.StatusOK, vo.UpdateMemberResponse{Code: vo.UserHasDeleted})
+			code = vo.UserHasDeleted
 			return
 		}
 
 		//返回TMember
-		RoleID, _ := strconv.Atoi(user.RoleId)
-		c.JSON(http.StatusOK, vo.GetMemberResponse{
-			Code: vo.OK,
-			Data: struct {
-				UserID   string
-				Nickname string
-				Username string
-				UserType vo.UserType
-			}{UserID: strconv.FormatInt(user.Uuid, 10), Nickname: user.NickName, Username: user.UserName, UserType: vo.UserType(RoleID)},
-		})
 		return
 	}
 }

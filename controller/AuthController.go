@@ -100,7 +100,7 @@ func (ctl AuthController) Login(c *gin.Context) {
 
 	//设置cookie，存储uuid
 	c.SetCookie("camp-session", strconv.FormatInt(user.Uuid, 10), 0, "/", ckdomain, false, true)
-
+	log.Println("login:successfully login")
 }
 
 //当用户点击退出按钮，销毁当前用户 Session 和认证 Cookie
