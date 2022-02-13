@@ -60,6 +60,13 @@ func (ctl UserController) Create(c *gin.Context) {
 		return
 	}
 	uuidT, err := strconv.ParseInt(cookie, 10, 64)
+	val, err := ctl.RDB.Get(ctl.Ctx, fmt.Sprintf("user:%s", strconv.FormatInt(uuidT, 10))).Result()
+	if err == redis.Nil {
+		//用户不存在
+		c.JSON(http.StatusOK, vo.UpdateMemberResponse{Code: vo.UserNotExisted})
+		return
+	}
+
 	if err := ctl.DB.Where("uuid = ?", uuidT).Take(&user).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			code = vo.UserNotExisted
@@ -144,8 +151,7 @@ func (ctl UserController) Member(c *gin.Context) {
 	}()
 	var req vo.GetMemberRequest
 
-	val := c.Query("UserID")
-	req.UserID = val
+	req.UserID = c.Query("UserID")
 
 	val, err := ctl.RDB.Get(ctl.Ctx, fmt.Sprintf("user:%s", req.UserID)).Result()
 	if err == redis.Nil {
