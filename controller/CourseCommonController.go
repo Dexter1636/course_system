@@ -6,6 +6,7 @@ import (
 	"course_system/repository"
 	"course_system/vo"
 	"github.com/gin-gonic/gin"
+	"log"
 	"net/http"
 	"strconv"
 )
@@ -46,7 +47,7 @@ func (ctl CourseCommonController) CreateCourse(c *gin.Context) {
 	code := ctl.repo.CreateCourse(&course)
 
 	// create course in Redis
-	code = ctl.courseRedisRepo.CreateCourse(course)
+	code = ctl.courseRedisRepo.CreateCourse(&course)
 
 	// response
 	c.JSON(http.StatusOK, vo.CreateCourseResponse{
@@ -55,6 +56,7 @@ func (ctl CourseCommonController) CreateCourse(c *gin.Context) {
 			CourseID string
 		}{CourseID: strconv.FormatInt(course.Id, 10)},
 	})
+	log.Printf("code: %d\n\n", code)
 
 }
 
@@ -69,10 +71,11 @@ func (ctl CourseCommonController) GetCourse(c *gin.Context) {
 			Code: code,
 			Data: dto.ToTCourse(course),
 		})
+		log.Printf("code: %d\n\n", code)
 	}()
 
 	// validate data
-	if err := c.ShouldBindJSON(&req); err != nil {
+	if err := c.ShouldBindQuery(&req); err != nil {
 		panic(err.Error())
 	}
 	courseId, err := strconv.ParseInt(req.CourseID, 10, 64)
@@ -81,5 +84,5 @@ func (ctl CourseCommonController) GetCourse(c *gin.Context) {
 	}
 
 	// get course
-	code = ctl.repo.GetCourseById(courseId, &course)
+	code = ctl.courseRedisRepo.GetCourseById(courseId, &course)
 }
