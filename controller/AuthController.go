@@ -4,7 +4,6 @@ import (
 	"context"
 	"course_system/common"
 	"course_system/model"
-	"course_system/test/data"
 	"course_system/vo"
 	"encoding/json"
 	"errors"
@@ -45,7 +44,6 @@ func NewAuthController() IAuthController {
 //登录成功后需要设置 Cookie，Cookie 名称为 camp-session。
 //response: ErrNo, UserID
 func (ctl AuthController) Login(c *gin.Context) {
-	data.CheckAdmin()
 	//POST方法，传参使用json，无需修改
 	var req vo.LoginRequest
 	var user model.User
