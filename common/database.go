@@ -90,7 +90,6 @@ func MessageQueue() {
 			}
 		} else {
 			time.Sleep(1 * time.Second)
-			fmt.Println("Sleep 1 second")
 		}
 	}
 }
