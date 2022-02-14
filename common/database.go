@@ -3,7 +3,6 @@ package common
 import (
 	"context"
 	"course_system/model"
-	"course_system/test/data"
 	"encoding/json"
 	"fmt"
 	"github.com/go-redis/redis/v8"
@@ -42,7 +41,9 @@ func InitDb() {
 	DB = db
 	fmt.Println("Connected to database.")
 
-	data.CheckAdmin()
+	// TODO: 删除以避免循环依赖
+	// @Author 彭守恒 2022-02-15 02:45 删除以避免循环依赖
+	// data.CheckAdmin()
 }
 
 func InitRedisData() {
