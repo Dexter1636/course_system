@@ -11,7 +11,6 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/go-redis/redis/v8"
 	"gorm.io/gorm"
-	"log"
 	"net/http"
 	"regexp"
 	"strconv"
@@ -54,35 +53,54 @@ func (ctl UserController) Create(c *gin.Context) {
 	}
 
 	//权限检查
+	//获取cookie
 	cookie, err := c.Cookie("camp-session")
 	if err != nil {
 		code = vo.LoginRequired
 		return
 	}
 	uuidT, err := strconv.ParseInt(cookie, 10, 64)
+	//redis检查usertype
 	val, err := ctl.RDB.Get(ctl.Ctx, fmt.Sprintf("user:%s", strconv.FormatInt(uuidT, 10))).Result()
 	if err == redis.Nil {
 		//用户不存在
-		c.JSON(http.StatusOK, vo.UpdateMemberResponse{Code: vo.UserNotExisted})
+		code = vo.UserNotExisted
 		return
-	}
-
-	if err := ctl.DB.Where("uuid = ?", uuidT).Take(&user).Error; err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			code = vo.UserNotExisted
-			log.Println("Create: uuid not existed")
-			return
-		} else {
+	} else if err != nil {
+		//Redis错误
+		code = vo.UnknownError
+		panic(err.Error())
+		return
+	} else {
+		var user model.User
+		if err := json.Unmarshal([]byte(val), &user); err != nil {
+			//JSON解析错误
 			code = vo.UnknownError
 			panic(err.Error())
 			return
 		}
+		if user.RoleId != "1" {
+			code = vo.PermDenied
+			return
+		}
 	}
-	if user.UserName != "JudgeAdmin" {
-		code = vo.PermDenied
-		log.Println("Create: PermDenied")
-		return
-	}
+
+	//if err := ctl.DB.Where("uuid = ?", uuidT).Take(&user).Error; err != nil {
+	//	if errors.Is(err, gorm.ErrRecordNotFound) {
+	//		code = vo.UserNotExisted
+	//		log.Println("Create: uuid not existed")
+	//		return
+	//	} else {
+	//		code = vo.UnknownError
+	//		panic(err.Error())
+	//		return
+	//	}
+	//}
+	//if user.UserName != "JudgeAdmin" {
+	//	code = vo.PermDenied
+	//	log.Println("Create: PermDenied")
+	//	return
+	//}
 
 	//参数校验
 	tmpStr := req.Password
