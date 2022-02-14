@@ -31,11 +31,11 @@ func RegisterRouter() *gin.Engine {
 	ccc := controller.NewCourseCommonController()
 	g.POST("/course/create", ccc.CreateCourse)
 	g.GET("/course/get", ccc.GetCourse)
-
-	g.POST("/teacher/bind_course")
-	g.POST("/teacher/unbind_course")
-	g.GET("/teacher/get_course")
-	g.POST("/course/schedule")
+	csc := controller.NewCourseScheduleController()
+	g.POST("/teacher/bind_course", csc.Bind)
+	g.POST("/teacher/unbind_course", csc.Unbind)
+	g.GET("/teacher/get_course", csc.Get)
+	g.POST("/course/schedule", csc.Schedule)
 
 	// 抢课
 	cbc := controller.NewCourseBookingController()
