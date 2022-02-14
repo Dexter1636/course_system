@@ -7,7 +7,7 @@ import (
 )
 
 func main() {
-	common.InitConfig("application")
+	common.InitConfig("test")
 	common.InitDb()
 	common.InitRdb(context.Background())
 	r := RegisterRouter()
