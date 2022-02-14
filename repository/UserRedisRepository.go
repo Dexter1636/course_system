@@ -20,17 +20,17 @@ type IUserRedisRepository interface {
 type UserRedisRepository struct {
 	DB  *gorm.DB
 	RDB *redis.Client
-	Ctx context.Context
+	ctx context.Context
 }
 
 func NewUserRedisRepository() IUserRedisRepository {
-	return UserRedisRepository{DB: common.GetDB(), RDB: common.GetRDB(), Ctx: common.GetCtx()}
+	return UserRedisRepository{DB: common.GetDB(), RDB: common.GetRDB(), ctx: common.GetCtx()}
 }
 
 func (srr UserRedisRepository) ValidateStudentByUuid(uuid int64) (code vo.ErrNo) {
 	code = vo.OK
 
-	val, err := srr.RDB.Get(srr.Ctx, "user:"+strconv.FormatInt(uuid, 10)).Result()
+	val, err := srr.RDB.Get(srr.ctx, "user:"+strconv.FormatInt(uuid, 10)).Result()
 	if err == redis.Nil {
 		code = vo.StudentNotExisted
 		return

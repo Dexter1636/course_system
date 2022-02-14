@@ -194,10 +194,11 @@ func (ctl CourseBookingController) GetStudentCourse(c *gin.Context) {
 				CourseList []vo.TCourse
 			}{tCourseList},
 		})
+		log.Printf("code: %d\n\n", code)
 	}()
 
 	// validate data
-	if err := c.ShouldBindJSON(&req); err != nil {
+	if err := c.ShouldBindQuery(&req); err != nil {
 		code = vo.ParamInvalid
 		return
 	}
