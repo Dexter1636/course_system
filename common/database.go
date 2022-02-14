@@ -4,6 +4,7 @@ import (
 	"context"
 	"course_system/model"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"github.com/go-redis/redis/v8"
 	"github.com/spf13/viper"
@@ -40,6 +41,14 @@ func InitDb() {
 	}
 	DB = db
 	fmt.Println("Connected to database.")
+
+	var u model.User
+	if err := DB.Where("user_name = ?", "JudgeAdmin").Take(&u).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			DB.Exec("INSERT INTO user(user_name, nick_name, password, role_id, enabled) " +
+				"VALUES ('JudgeAdmin', 'JudgeAdmin', 'JudgePassword2022', '1', 1)")
+		}
+	}
 }
 
 func InitRedisData() {
