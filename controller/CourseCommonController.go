@@ -16,11 +16,15 @@ type ICourseCommonController interface {
 }
 
 type CourseCommonController struct {
-	repo repository.ICourseRepository
+	repo            repository.ICourseRepository
+	courseRedisRepo repository.ICourseRedisRepository
 }
 
 func NewCourseCommonController() ICourseCommonController {
-	return CourseCommonController{repo: repository.NewCourseRepository()}
+	return CourseCommonController{
+		repo:            repository.NewCourseRepository(),
+		courseRedisRepo: repository.NewCourseRedisRepository(),
+	}
 }
 
 func (ctl CourseCommonController) CreateCourse(c *gin.Context) {
@@ -31,14 +35,18 @@ func (ctl CourseCommonController) CreateCourse(c *gin.Context) {
 		panic(err.Error())
 	}
 
-	// create course
+	// course instance
 	course := model.Course{
 		Name:  req.Name,
 		Cap:   req.Cap,
 		Avail: req.Cap,
 	}
 
+	// create course in MySQL
 	code := ctl.repo.CreateCourse(&course)
+
+	// create course in Redis
+	code = ctl.courseRedisRepo.CreateCourse(course)
 
 	// response
 	c.JSON(http.StatusOK, vo.CreateCourseResponse{
