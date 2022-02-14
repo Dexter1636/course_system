@@ -28,10 +28,20 @@ func NewCourseScheduleController() ICourseScheduleController {
 func (ctl CourseScheduleController) Bind(c *gin.Context) {
 	var req vo.BindCourseRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		panic(err.Error())
+		c.JSON(http.StatusOK, vo.BindCourseResponse{Code: vo.ParamInvalid})
+		return
 	}
 	var sample model.Course
-	number, _ := strconv.ParseInt(req.CourseID, 10, 64)
+	number, err := strconv.ParseInt(req.CourseID, 10, 64)
+	if err != nil {
+		c.JSON(http.StatusOK, vo.BookCourseResponse{Code: vo.ParamInvalid})
+		return
+	}
+	_, err2 := strconv.ParseInt(req.TeacherID, 10, 64)
+	if err2 != nil {
+		c.JSON(http.StatusOK, vo.BindCourseResponse{Code: vo.ParamInvalid})
+		return
+	}
 	a := ctl.DB.Model(&model.Course{}).First(&sample, number)
 	if a.RowsAffected == 0 {
 		c.JSON(http.StatusOK, vo.BindCourseResponse{Code: vo.CourseNotExisted})
@@ -45,10 +55,20 @@ func (ctl CourseScheduleController) Bind(c *gin.Context) {
 func (ctl CourseScheduleController) Unbind(c *gin.Context) {
 	var req vo.UnbindCourseRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		panic(err.Error())
+		c.JSON(http.StatusOK, vo.UnbindCourseResponse{Code: vo.ParamInvalid})
+		return
 	}
 	var sample model.Course
-	number, _ := strconv.ParseInt(req.CourseID, 10, 64)
+	number, err := strconv.ParseInt(req.CourseID, 10, 64)
+	if err != nil {
+		c.JSON(http.StatusOK, vo.UnbindCourseResponse{Code: vo.ParamInvalid})
+		return
+	}
+	_, err2 := strconv.ParseInt(req.TeacherID, 10, 64)
+	if err2 != nil {
+		c.JSON(http.StatusOK, vo.UnbindCourseResponse{Code: vo.ParamInvalid})
+		return
+	}
 	a := ctl.DB.Model(&model.Course{}).First(&sample, number)
 	if a.RowsAffected == 0 {
 		c.JSON(http.StatusOK, vo.UnbindCourseResponse{Code: vo.CourseNotExisted})
@@ -61,10 +81,16 @@ func (ctl CourseScheduleController) Unbind(c *gin.Context) {
 }
 func (ctl CourseScheduleController) Get(c *gin.Context) {
 	var req vo.GetTeacherCourseRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		panic(err.Error())
+	//if err := c.ShouldBindJSON(&req); err != nil {
+	//	c.JSON(http.StatusOK, vo.GetTeacherCourseResponse{Code: vo.ParamInvalid})
+	//	return
+	//}
+	req.TeacherID = c.Query("TeacherID")
+	number, err := strconv.ParseInt(req.TeacherID, 10, 64)
+	if err != nil {
+		c.JSON(http.StatusOK, vo.GetTeacherCourseResponse{Code: vo.ParamInvalid})
+		return
 	}
-	number, _ := strconv.ParseInt(req.TeacherID, 10, 64)
 	var rows []model.Course
 	var ans vo.GetTeacherCourseResponse
 	result := ctl.DB.Model(&model.Course{}).Where("teacher_id = ?", number).Find(&rows)
@@ -119,9 +145,12 @@ func dfs(x int) bool {
 func (ctl CourseScheduleController) Schedule(c *gin.Context) {
 	var req vo.ScheduleCourseRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		panic(err.Error())
+		c.JSON(http.StatusOK, vo.ScheduleCourseResponse{
+			Code: vo.ParamInvalid,
+			Data: nil,
+		})
+		return
 	}
-
 	var tnum map[string]int
 	var cnum map[string]int
 	tnum = make(map[string]int)

@@ -10,6 +10,7 @@ import (
 	"github.com/go-redis/redis/v8"
 	"gorm.io/gorm"
 	"log"
+	"strconv"
 )
 
 type IUserRedisRepository interface {
@@ -29,7 +30,7 @@ func NewUserRedisRepository() IUserRedisRepository {
 func (srr UserRedisRepository) ValidateStudentByUuid(uuid int64) (code vo.ErrNo) {
 	code = vo.OK
 
-	val, err := srr.RDB.Get(srr.Ctx, fmt.Sprintf("user:%d", uuid)).Result()
+	val, err := srr.RDB.Get(srr.Ctx, "user:"+strconv.FormatInt(uuid, 10)).Result()
 	if err == redis.Nil {
 		code = vo.StudentNotExisted
 		return

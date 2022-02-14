@@ -38,9 +38,6 @@ func (ctl UserController) Create(c *gin.Context) {
 	var req vo.CreateMemberRequest
 	var user, u model.User
 	code := vo.OK
-	if err := c.ShouldBindJSON(&req); err != nil {
-		panic(err.Error())
-	}
 
 	defer func() {
 		c.JSON(http.StatusOK, vo.CreateMemberResponse{
@@ -49,17 +46,61 @@ func (ctl UserController) Create(c *gin.Context) {
 		})
 	}()
 
+	if err := c.ShouldBindJSON(&req); err != nil {
+		code = vo.UnknownError
+		panic(err.Error())
+		return
+	}
+
 	//权限检查
+	//获取cookie
 	cookie, err := c.Cookie("camp-session")
 	if err != nil {
 		code = vo.LoginRequired
 		return
 	}
 	uuidT, err := strconv.ParseInt(cookie, 10, 64)
-	if uuidT != 1 {
-		code = vo.PermDenied
+	//redis检查usertype
+	val, err := ctl.RDB.Get(ctl.Ctx, fmt.Sprintf("user:%s", strconv.FormatInt(uuidT, 10))).Result()
+	if err == redis.Nil {
+		//用户不存在
+		code = vo.UserNotExisted
 		return
+	} else if err != nil {
+		//Redis错误
+		code = vo.UnknownError
+		panic(err.Error())
+		return
+	} else {
+		var user model.User
+		if err := json.Unmarshal([]byte(val), &user); err != nil {
+			//JSON解析错误
+			code = vo.UnknownError
+			panic(err.Error())
+			return
+		}
+		if user.RoleId != "1" {
+			code = vo.PermDenied
+			return
+		}
 	}
+
+	//if err := ctl.DB.Where("uuid = ?", uuidT).Take(&user).Error; err != nil {
+	//	if errors.Is(err, gorm.ErrRecordNotFound) {
+	//		code = vo.UserNotExisted
+	//		log.Println("Create: uuid not existed")
+	//		return
+	//	} else {
+	//		code = vo.UnknownError
+	//		panic(err.Error())
+	//		return
+	//	}
+	//}
+	//if user.UserName != "JudgeAdmin" {
+	//	code = vo.PermDenied
+	//	log.Println("Create: PermDenied")
+	//	return
+	//}
 
 	//参数校验
 	tmpStr := req.Password
@@ -84,9 +125,25 @@ func (ctl UserController) Create(c *gin.Context) {
 	if err := ctl.DB.Where("user_name = ?", req.Username).Take(&u).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			ctl.DB.Create(&user)
+			val, err := json.Marshal(user)
+			if err != nil {
+				//JSON解析错误
+				code = vo.UnknownError
+				panic(err.Error())
+				return
+			}
+			//存入redis
+			err = ctl.RDB.Set(ctl.Ctx, fmt.Sprintf("user:%d", user.Uuid), val, 0).Err()
+			if err != nil {
+				code = vo.UnknownError
+				panic(err.Error())
+				return
+			}
 			return
 		} else {
+			code = vo.UnknownError
 			panic(err.Error())
+			return
 		}
 	}
 
@@ -96,58 +153,51 @@ func (ctl UserController) Create(c *gin.Context) {
 }
 
 func (ctl UserController) Member(c *gin.Context) {
-	var req vo.GetMemberRequest
-
-	if err := c.ShouldBindJSON(&req); err != nil {
-		panic(err.Error())
-	}
-
+	code := vo.OK
 	var user model.User
-
-	//检查用户不存在
-	if err := ctl.DB.Where("uuid = ?", req.UserID).Take(&user).Error; err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			c.JSON(http.StatusOK, vo.GetMemberResponse{
-				Code: vo.UserNotExisted,
-				Data: struct {
-					UserID   string
-					Nickname string
-					Username string
-					UserType vo.UserType
-				}{UserID: "", Nickname: "", Username: "", UserType: 0},
-			})
-			return
-		} else {
-			panic(err.Error())
-		}
-	}
-
-	//检查用户已删除
-	if user.Enabled == 0 {
+	defer func() {
+		RoleID, _ := strconv.Atoi(user.RoleId)
 		c.JSON(http.StatusOK, vo.GetMemberResponse{
-			Code: vo.UserHasDeleted,
+			Code: code,
 			Data: struct {
 				UserID   string
 				Nickname string
 				Username string
 				UserType vo.UserType
-			}{UserID: "", Nickname: "", Username: "", UserType: 0},
+			}{UserID: strconv.FormatInt(user.Uuid, 10), Nickname: user.NickName, Username: user.UserName, UserType: vo.UserType(RoleID)},
 		})
+	}()
+	var req vo.GetMemberRequest
+
+	req.UserID = c.Query("UserID")
+
+	val, err := ctl.RDB.Get(ctl.Ctx, fmt.Sprintf("user:%s", req.UserID)).Result()
+	if err == redis.Nil {
+		//用户不存在
+		code = vo.UserNotExisted
+		return
+	} else if err != nil {
+		//Redis错误
+		code = vo.UnknownError
+		panic(err.Error())
+		return
+	} else {
+		if err := json.Unmarshal([]byte(val), &user); err != nil {
+			//JSON解析错误
+			code = vo.UnknownError
+			panic(err.Error())
+			return
+		}
+
+		//检查用户已删除
+		if user.Enabled == 0 {
+			code = vo.UserHasDeleted
+			return
+		}
+
+		//返回TMember
 		return
 	}
-
-	//返回TMember
-	RoleID, _ := strconv.Atoi(user.RoleId)
-	c.JSON(http.StatusOK, vo.GetMemberResponse{
-		Code: vo.OK,
-		Data: struct {
-			UserID   string
-			Nickname string
-			Username string
-			UserType vo.UserType
-		}{UserID: strconv.FormatInt(user.Uuid, 10), Nickname: user.NickName, Username: user.UserName, UserType: vo.UserType(RoleID)},
-	})
-	return
 }
 
 func (ctl UserController) List(c *gin.Context) {
