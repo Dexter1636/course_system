@@ -13,6 +13,8 @@ import (
 
 var env string
 
+var fileLogger *log.Logger
+
 func InitLogger() {
 	env = viper.GetString("environment")
 
@@ -37,6 +39,7 @@ func InitLogger() {
 			panic(err.Error())
 		}
 		gin.DefaultWriter = io.MultiWriter(f)
+		fileLogger = log.New(f, "\r\n", log.LstdFlags)
 		log.SetOutput(f)
 
 		fmt.Println("==== logger env: production ====")
