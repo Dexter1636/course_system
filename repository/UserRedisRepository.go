@@ -45,7 +45,7 @@ func (srr UserRedisRepository) ValidateStudentByUuid(uuid int64) (code vo.ErrNo)
 			code = vo.UnknownError
 			return
 		}
-		if user.RoleId != fmt.Sprintf("%d", vo.Student) {
+		if user.RoleId != fmt.Sprintf("%d", vo.Student) || user.Enabled != 1 {
 			code = vo.StudentNotExisted
 			return
 		}
