@@ -48,6 +48,10 @@ func (ctl CourseScheduleController) Bind(c *gin.Context) {
 		return
 	}
 
+	println(req.CourseID, req.TeacherID)
+
+	println(fmt.Sprintf("course:%s", req.CourseID))
+	
 	val, err := ctl.RDB.Get(ctl.Ctx, fmt.Sprintf("course:%s", req.CourseID)).Result()
 	if err == redis.Nil {
 		//course not exist
@@ -64,6 +68,9 @@ func (ctl CourseScheduleController) Bind(c *gin.Context) {
 			return
 		}
 	}
+
+	println("AAA")
+
 	if sample.TeacherId != 0 {
 		c.JSON(http.StatusOK, vo.BindCourseResponse{Code: vo.CourseHasBound})
 		return
@@ -75,6 +82,9 @@ func (ctl CourseScheduleController) Bind(c *gin.Context) {
 		c.JSON(http.StatusOK, vo.BindCourseResponse{Code: vo.UnknownError})
 		return
 	}
+
+	println("BBB")
+
 	//存入redis
 	err = ctl.RDB.Set(ctl.Ctx, fmt.Sprintf("course:%d", sample.TeacherId), val2, 0).Err()
 	if err != nil {
