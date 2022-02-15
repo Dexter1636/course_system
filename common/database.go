@@ -6,7 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/go-redis/redis/v8"
+  "github.com/go-redis/redis/v8"
 	"github.com/spf13/viper"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
@@ -41,8 +41,7 @@ func InitDb() {
 	}
 	DB = db
 	fmt.Println("Connected to database.")
-
-	// TODO: 删除以避免循环依赖
+	
 	// @Author 彭守恒 2022-02-15 02:45 删除以避免循环依赖
 	// data.CheckAdmin()
 	var u model.User
