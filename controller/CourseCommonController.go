@@ -33,6 +33,7 @@ func (ctl CourseCommonController) CreateCourse(c *gin.Context) {
 
 	// validate data
 	if err := c.ShouldBindJSON(&req); err != nil {
+		// TODO: invalid params
 		panic(err.Error())
 	}
 
@@ -76,6 +77,7 @@ func (ctl CourseCommonController) GetCourse(c *gin.Context) {
 
 	// validate data
 	if err := c.ShouldBindQuery(&req); err != nil {
+		// TODO
 		panic(err.Error())
 	}
 	courseId, err := strconv.ParseInt(req.CourseID, 10, 64)
