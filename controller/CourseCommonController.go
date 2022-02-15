@@ -80,8 +80,8 @@ func (ctl CourseCommonController) GetCourse(c *gin.Context) {
 
 	// validate data
 	if err := c.ShouldBindQuery(&req); err != nil {
-		// TODO
-		panic(err.Error())
+		code = vo.ParamInvalid
+		return
 	}
 	courseId, err := strconv.ParseInt(req.CourseID, 10, 64)
 	if err != nil {
