@@ -194,10 +194,11 @@ func (ctl CourseBookingController) GetStudentCourse(c *gin.Context) {
 				CourseList []vo.TCourse
 			}{tCourseList},
 		})
+		log.Printf("code: %d\n\n", code)
 	}()
 
 	// validate data
-	if err := c.ShouldBindJSON(&req); err != nil {
+	if err := c.ShouldBindQuery(&req); err != nil {
 		code = vo.ParamInvalid
 		return
 	}
@@ -208,7 +209,7 @@ func (ctl CourseBookingController) GetStudentCourse(c *gin.Context) {
 	}
 
 	// get course
-	code = ctl.repo.GetCourseListByStudentId(studentId, &courseList)
+	code = ctl.courseRedisRepo.GetCourseListByStudentId(studentId, &courseList)
 
 	// convert query result to response type
 	for _, course := range courseList {

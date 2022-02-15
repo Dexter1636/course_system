@@ -15,17 +15,17 @@ type IScRedisRepository interface {
 
 type ScRedisRepository struct {
 	RDB *redis.Client
-	Ctx context.Context
+	ctx context.Context
 }
 
 func NewScRedisRepository() IScRedisRepository {
-	return ScRedisRepository{RDB: common.GetRDB(), Ctx: common.GetCtx()}
+	return ScRedisRepository{RDB: common.GetRDB(), ctx: common.GetCtx()}
 }
 
-func (crr ScRedisRepository) DeleteSc(stuId int64, courseId int64) (code vo.ErrNo) {
+func (srr ScRedisRepository) DeleteSc(stuId int64, courseId int64) (code vo.ErrNo) {
 	code = vo.OK
 
-	_, err := crr.RDB.SRem(crr.Ctx, fmt.Sprintf("sc:%d", stuId), courseId).Result()
+	_, err := srr.RDB.SRem(srr.ctx, fmt.Sprintf("sc:%d", stuId), courseId).Result()
 	if err == redis.Nil {
 		log.Println("Redis ERROR when DeleteSc")
 		code = vo.UnknownError
