@@ -1,12 +1,17 @@
 package controller
 
 import (
+	"context"
 	"course_system/common"
 	"course_system/model"
 	"course_system/vo"
+	"encoding/json"
+	"errors"
 	"fmt"
 	"github.com/gin-gonic/gin"
+	"github.com/go-redis/redis/v8"
 	"gorm.io/gorm"
+	"log"
 	"net/http"
 	"strconv"
 )
@@ -18,12 +23,13 @@ type ICourseScheduleController interface {
 	Schedule(c *gin.Context)
 }
 type CourseScheduleController struct {
-	DB *gorm.DB
+	DB  *gorm.DB
+	RDB *redis.Client
+	Ctx context.Context
 }
 
 func NewCourseScheduleController() ICourseScheduleController {
-	db := common.GetDB()
-	return CourseScheduleController{DB: db}
+	return CourseScheduleController{DB: common.GetDB(), RDB: common.GetRDB(), Ctx: common.GetCtx()}
 }
 func (ctl CourseScheduleController) Bind(c *gin.Context) {
 	var req vo.BindCourseRequest
@@ -32,27 +38,77 @@ func (ctl CourseScheduleController) Bind(c *gin.Context) {
 		return
 	}
 	var sample model.Course
-	number, err := strconv.ParseInt(req.CourseID, 10, 64)
-	if err != nil {
-		c.JSON(http.StatusOK, vo.BookCourseResponse{Code: vo.ParamInvalid})
+	number2, err1 := strconv.ParseInt(req.CourseID, 10, 64)
+	if err1 != nil {
+		c.JSON(http.StatusOK, vo.BindCourseResponse{Code: vo.ParamInvalid})
 		return
 	}
-	_, err2 := strconv.ParseInt(req.TeacherID, 10, 64)
+	number, err2 := strconv.ParseInt(req.TeacherID, 10, 64)
 	if err2 != nil {
 		c.JSON(http.StatusOK, vo.BindCourseResponse{Code: vo.ParamInvalid})
 		return
 	}
-	a := ctl.DB.Model(&model.Course{}).First(&sample, number)
-	if a.Error != nil {
-		c.JSON(http.StatusOK, vo.BindCourseResponse{Code: vo.UnknownError})
-	} else if a.RowsAffected == 0 {
+	log.Println("Bind ", req.CourseID, " ", req.TeacherID)
+	val, err4 := ctl.RDB.Get(ctl.Ctx, fmt.Sprintf("course:%s", req.CourseID)).Result()
+	if err4 == redis.Nil {
+		//course not exist
+		log.Println("Bind Case 1")
 		c.JSON(http.StatusOK, vo.BindCourseResponse{Code: vo.CourseNotExisted})
-	} else if sample.TeacherId != 0 {
-		c.JSON(http.StatusOK, vo.BindCourseResponse{Code: vo.CourseHasBound})
+		return
+	} else if err4 != nil {
+		//Redis错误
+		log.Println("Bind Case 2")
+		c.JSON(http.StatusOK, vo.BindCourseResponse{Code: vo.UnknownError})
+		return
 	} else {
-		ctl.DB.Model(&model.Course{}).First(&sample, number).Update("TeacherId", req.TeacherID)
-		c.JSON(http.StatusOK, vo.BindCourseResponse{Code: vo.OK})
+		log.Println("Bind Case 3")
+		if err4 := json.Unmarshal([]byte(val), &sample); err4 != nil {
+			log.Println("Bind Case 4")
+			//JSON解析错误
+			c.JSON(http.StatusOK, vo.BindCourseResponse{Code: vo.UnknownError})
+			return
+		}
 	}
+
+	if sample.TeacherId != 0 {
+		log.Println("Bind Case 5")
+		c.JSON(http.StatusOK, vo.BindCourseResponse{Code: vo.CourseHasBound})
+		return
+	}
+	sample.TeacherId = number
+	val2, err3 := json.Marshal(sample)
+	if err3 != nil {
+		//JSON解析错误
+		log.Println("Bind Case 6")
+		c.JSON(http.StatusOK, vo.BindCourseResponse{Code: vo.UnknownError})
+		return
+	}
+
+	//存入redis
+
+	err5 := ctl.RDB.Set(ctl.Ctx, fmt.Sprintf("course:%s", req.CourseID), val2, 0).Err()
+	if err5 != nil {
+		log.Println("Bind Case 7")
+		c.JSON(http.StatusOK, vo.BindCourseResponse{Code: vo.UnknownError})
+		panic(err5.Error())
+		return
+	}
+	//存入mysql
+	if err := ctl.DB.Model(&model.Course{}).First(&sample, number2).Update("TeacherId", req.TeacherID).Error; err != nil {
+		log.Println("Bind Case 8")
+		c.JSON(http.StatusOK, vo.BindCourseResponse{Code: vo.UnknownError})
+		return
+	}
+	c.JSON(http.StatusOK, vo.BindCourseResponse{Code: vo.OK})
+	//a := ctl.DB.Model(&model.Course{}).First(&sample, number)
+	//if a.RowsAffected == 0 {
+	//	c.JSON(http.StatusOK, vo.BindCourseResponse{Code: vo.CourseNotExisted})
+	//} else if sample.TeacherId != 0 {
+	//	c.JSON(http.StatusOK, vo.BindCourseResponse{Code: vo.CourseHasBound})
+	//} else {
+	//	ctl.DB.Model(&model.Course{}).First(&sample, number).Update("TeacherId", req.TeacherID)
+	//	c.JSON(http.StatusOK, vo.BindCourseResponse{Code: vo.OK})
+	//}
 }
 func (ctl CourseScheduleController) Unbind(c *gin.Context) {
 	var req vo.UnbindCourseRequest
@@ -61,27 +117,80 @@ func (ctl CourseScheduleController) Unbind(c *gin.Context) {
 		return
 	}
 	var sample model.Course
-	number, err := strconv.ParseInt(req.CourseID, 10, 64)
-	if err != nil {
+	number, err1 := strconv.ParseInt(req.CourseID, 10, 64)
+	if err1 != nil {
 		c.JSON(http.StatusOK, vo.UnbindCourseResponse{Code: vo.ParamInvalid})
 		return
 	}
-	_, err2 := strconv.ParseInt(req.TeacherID, 10, 64)
+	number2, err2 := strconv.ParseInt(req.TeacherID, 10, 64)
 	if err2 != nil {
 		c.JSON(http.StatusOK, vo.UnbindCourseResponse{Code: vo.ParamInvalid})
 		return
 	}
-	a := ctl.DB.Model(&model.Course{}).First(&sample, number)
-	if a.Error != nil {
-		c.JSON(http.StatusOK, vo.UnbindCourseResponse{Code: vo.UnknownError})
-	} else if a.RowsAffected == 0 {
+	log.Println("UnBind ", req.CourseID, " ", req.TeacherID)
+	val, err4 := ctl.RDB.Get(ctl.Ctx, fmt.Sprintf("course:%s", req.CourseID)).Result()
+	if err4 == redis.Nil {
+		//course not exist
+		log.Println("UnBind Case 1")
 		c.JSON(http.StatusOK, vo.UnbindCourseResponse{Code: vo.CourseNotExisted})
-	} else if sample.TeacherId == 0 {
-		c.JSON(http.StatusOK, vo.UnbindCourseResponse{Code: vo.CourseNotBind})
+		return
+	} else if err4 != nil {
+		//Redis错误
+		log.Println("UnBind Case 2")
+		c.JSON(http.StatusOK, vo.UnbindCourseResponse{Code: vo.UnknownError})
+		return
 	} else {
-		ctl.DB.Model(&model.Course{}).First(&sample, number).Update("TeacherId", 0)
-		c.JSON(http.StatusOK, vo.UnbindCourseResponse{Code: vo.OK})
+		log.Println("UnBind Case 3")
+		if err := json.Unmarshal([]byte(val), &sample); err != nil {
+			log.Println("UnBind Case 4")
+			//JSON解析错误
+			c.JSON(http.StatusOK, vo.UnbindCourseResponse{Code: vo.UnknownError})
+			return
+		}
 	}
+	if sample.TeacherId == 0 {
+		log.Println("UnBind Case 5")
+		c.JSON(http.StatusOK, vo.UnbindCourseResponse{Code: vo.CourseNotBind})
+		return
+	}
+	if sample.TeacherId != number2 {
+		log.Println("UnBind Case 6")
+		c.JSON(http.StatusOK, vo.UnbindCourseResponse{Code: vo.UserNotExisted})
+		return
+	}
+	sample.TeacherId = 0
+	val2, err3 := json.Marshal(sample)
+	if err3 != nil {
+		//JSON解析错误
+		log.Println("UnBind Case 7")
+		c.JSON(http.StatusOK, vo.UnbindCourseResponse{Code: vo.UnknownError})
+		return
+	}
+	//存入redis
+	err := ctl.RDB.Set(ctl.Ctx, fmt.Sprintf("course:%s", req.CourseID), val2, 0).Err()
+	if err != nil {
+		log.Println("UnBind Case 8")
+		c.JSON(http.StatusOK, vo.UnbindCourseResponse{Code: vo.UnknownError})
+		panic(err.Error())
+		return
+	}
+	//存入mysql
+	if err := ctl.DB.Model(&model.Course{}).First(&sample, number).Update("TeacherId", 0).Error; err != nil {
+		log.Println("UnBind Case 9")
+		c.JSON(http.StatusOK, vo.UnbindCourseResponse{Code: vo.UnknownError})
+		panic(err.Error())
+		return
+	}
+	c.JSON(http.StatusOK, vo.UnbindCourseResponse{Code: vo.OK})
+	//a := ctl.DB.Model(&model.Course{}).First(&sample, number)
+	//if a.RowsAffected == 0 {
+	//	c.JSON(http.StatusOK, vo.UnbindCourseResponse{Code: vo.CourseNotExisted})
+	//} else if sample.TeacherId == 0 {
+	//	c.JSON(http.StatusOK, vo.UnbindCourseResponse{Code: vo.CourseNotBind})
+	//} else {
+	//	ctl.DB.Model(&model.Course{}).First(&sample, number).Update("TeacherId", 0)
+	//	c.JSON(http.StatusOK, vo.UnbindCourseResponse{Code: vo.OK})
+	//}
 }
 func (ctl CourseScheduleController) Get(c *gin.Context) {
 	var req vo.GetTeacherCourseRequest
@@ -95,13 +204,27 @@ func (ctl CourseScheduleController) Get(c *gin.Context) {
 		c.JSON(http.StatusOK, vo.GetTeacherCourseResponse{Code: vo.ParamInvalid})
 		return
 	}
+	log.Println("TGet ", req.TeacherID)
+	var sample model.User
+	if err := ctl.DB.Model(&model.User{}).First(&sample, number).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			log.Println("TGet Case1")
+			c.JSON(http.StatusOK, vo.GetTeacherCourseResponse{Code: vo.UserNotExisted})
+			return
+		} else {
+			log.Println("TGet Case2")
+			c.JSON(http.StatusOK, vo.GetTeacherCourseResponse{Code: vo.UnknownError})
+			return
+		}
+	} else if sample.RoleId != "3" {
+		log.Println("TGet Case3")
+		c.JSON(http.StatusOK, vo.GetTeacherCourseResponse{Code: vo.UserNotExisted})
+		return
+	}
+	log.Println("TGet Case4")
 	var rows []model.Course
 	var ans vo.GetTeacherCourseResponse
 	result := ctl.DB.Model(&model.Course{}).Where("teacher_id = ?", number).Find(&rows)
-	if result.Error != nil {
-		c.JSON(http.StatusOK, vo.GetCourseResponse{Code: vo.UnknownError})
-		return
-	}
 	ans.Data.CourseList = make([]*vo.TCourse, result.RowsAffected)
 	for i := 0; i < int(result.RowsAffected); i++ {
 		ans.Data.CourseList[i] = new(vo.TCourse)
@@ -185,6 +308,7 @@ func (ctl CourseScheduleController) Schedule(c *gin.Context) {
 			}
 		}
 	}
+	log.Println("schedule:", n, " ", m, " ", nums)
 	a = make([]node, nums+10)
 	q = make([]int, n+m+10)
 	v = make([]bool, nums+10)
