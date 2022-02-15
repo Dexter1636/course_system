@@ -209,7 +209,7 @@ func (ctl CourseBookingController) GetStudentCourse(c *gin.Context) {
 	}
 
 	// get course
-	code = ctl.repo.GetCourseListByStudentId(studentId, &courseList)
+	code = ctl.courseRedisRepo.GetCourseListByStudentId(studentId, &courseList)
 
 	// convert query result to response type
 	for _, course := range courseList {
