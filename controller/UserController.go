@@ -85,6 +85,11 @@ func (ctl UserController) Create(c *gin.Context) {
 			panic(err.Error())
 			return
 		}
+		if user.Enabled == 0 {
+			code = vo.UserHasDeleted
+			log.Println("CreateMember:UserHasDeleted")
+			return
+		}
 		if user.RoleId != "1" {
 			code = vo.PermDenied
 			log.Println("CreateMember:PermDenied cause user not admin")
