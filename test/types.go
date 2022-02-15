@@ -24,8 +24,6 @@ type GetCourseTest struct {
 	ExpResp vo.GetCourseResponse
 }
 
-//<<<<<<< HEAD =======
-
 func (t CreateCourseTest) getReq() interface{} {
 	return t.Req
 }

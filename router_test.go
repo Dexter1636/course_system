@@ -1,6 +1,7 @@
 package main
 
 import (
+  "context"
 	"course_system/common"
 	"course_system/test"
 	"course_system/test/cases"
@@ -24,10 +25,11 @@ var pathPrefix string
 func setup() {
 	common.InitConfig("test")
 	common.InitDb()
+	cleanup()
+	common.InitRdb(context.Background())
 	router = RegisterRouter()
 	pathPrefix = "/api/v1"
 	rand.Seed(10)
-	cleanup()
 }
 
 // after all
@@ -145,7 +147,7 @@ func TestCreateMemberRoute(t *testing.T) {
 	t.Cleanup(cleanup)
 
 	for _, tc := range cases.CreateMemberCases {
-		test.AssertCase(t, router, "POST", pathPrefix, "/member/create", tc)
+		test.AssertCaseForCreate(t, router, "POST", pathPrefix, "/member/create", tc)
 	}
 }
 
@@ -153,7 +155,7 @@ func BenchmarkCreateMemberRoute(b *testing.B) {
 	b.Cleanup(cleanup)
 
 	for i := 0; i < b.N; i++ {
-		test.AssertBenchmarkCase(b, router, "POST", pathPrefix, "/member/create", cases.GenerateCreateMemberCase(i))
+		test.AssertBenchmarkCaseForCreate(b, router, "POST", pathPrefix, "/member/create", cases.GenerateCreateMemberCase(i))
 	}
 }
 
@@ -186,7 +188,7 @@ func TestGetMemberListRoute(t *testing.T) {
 	data.InitDataForUserOther()
 
 	for _, tc := range cases.GetMemberListCases {
-		test.AssertCase(t, router, "GET", pathPrefix, "/member/list", tc)
+		test.AssertCase(t, router, "GET", pathPrefix, "/member/list"+fmt.Sprintf("?Offset=%d&Limit=%d", tc.Req.Offset, tc.Req.Limit), tc)
 	}
 }
 
@@ -197,7 +199,8 @@ func BenchmarkGetMemberListRoute(b *testing.B) {
 	data.InitDataForUserOther()
 
 	for i := 0; i < b.N; i++ {
-		test.AssertBenchmarkCase(b, router, "GET", pathPrefix, "/member/list", cases.GenerateGetMemberListCase(i))
+		tc := cases.GenerateGetMemberListCase(i)
+		test.AssertBenchmarkCase(b, router, "GET", pathPrefix, "/member/list"+fmt.Sprintf("?Offset=%d&Limit=%d", tc.Req.Offset, tc.Req.Limit), tc)
 	}
 }
 
