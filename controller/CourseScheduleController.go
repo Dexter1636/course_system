@@ -204,19 +204,24 @@ func (ctl CourseScheduleController) Get(c *gin.Context) {
 		c.JSON(http.StatusOK, vo.GetTeacherCourseResponse{Code: vo.ParamInvalid})
 		return
 	}
+	log.Println("TGet ", req.TeacherID)
 	var sample model.User
 	if err := ctl.DB.Model(&model.User{}).First(&sample, number).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
+			log.Println("TGet Case1")
 			c.JSON(http.StatusOK, vo.GetTeacherCourseResponse{Code: vo.UserNotExisted})
 			return
 		} else {
+			log.Println("TGet Case2")
 			c.JSON(http.StatusOK, vo.GetTeacherCourseResponse{Code: vo.UnknownError})
 			return
 		}
 	} else if sample.RoleId != "3" {
+		log.Println("TGet Case3")
 		c.JSON(http.StatusOK, vo.GetTeacherCourseResponse{Code: vo.UserNotExisted})
 		return
 	}
+	log.Println("TGet Case4")
 	var rows []model.Course
 	var ans vo.GetTeacherCourseResponse
 	result := ctl.DB.Model(&model.Course{}).Where("teacher_id = ?", number).Find(&rows)
