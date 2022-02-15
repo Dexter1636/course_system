@@ -96,7 +96,7 @@ func (crr CourseRedisRepository) GetCourseListByStudentId(stuId int64, courseLis
 		local role = user["RoleId"]
 		local enabled = user["Enabled"]
 		if role ~= '2' or enabled ~= 1 then
-			return {111}
+			return {11}
 		end
 
 		local sc_exist = redis.call("EXISTS", sc_key)
