@@ -230,24 +230,26 @@ func (ctl UserController) List(c *gin.Context) {
 	val, err := strconv.Atoi(c.Query("Limit"))
 	if err != nil {
 		c.JSON(http.StatusOK, vo.GetMemberListResponse{
-			Code: vo.UnknownError,
+			Code: vo.ParamInvalid,
 			Data: struct {
 				MemberList []vo.TMember
 			}{MemberList: []vo.TMember{}},
 		})
-		panic(err.Error())
+		log.Println("List:Limit参数错误")
+		log.Println(err.Error())
 		return
 	}
 	req.Limit = val
 	val, err = strconv.Atoi(c.Query("Offset"))
 	if err != nil {
 		c.JSON(http.StatusOK, vo.GetMemberListResponse{
-			Code: vo.UnknownError,
+			Code: vo.ParamInvalid,
 			Data: struct {
 				MemberList []vo.TMember
 			}{MemberList: []vo.TMember{}},
 		})
-		panic(err.Error())
+		log.Println("List:Offset参数错误")
+		log.Println(err.Error())
 		return
 	}
 	req.Offset = val
@@ -260,6 +262,7 @@ func (ctl UserController) List(c *gin.Context) {
 				MemberList []vo.TMember
 			}{MemberList: []vo.TMember{}},
 		})
+		log.Println("List:Limit不存在，存在Offset")
 		return
 	}
 
@@ -272,7 +275,8 @@ func (ctl UserController) List(c *gin.Context) {
 				MemberList []vo.TMember
 			}{MemberList: []vo.TMember{}},
 		})
-		panic(err.Error())
+		log.Println("List:查询数据库错误")
+		log.Println(err.Error())
 		return
 	}
 
@@ -287,7 +291,8 @@ func (ctl UserController) List(c *gin.Context) {
 					MemberList []vo.TMember
 				}{MemberList: []vo.TMember{}},
 			})
-			panic(err.Error())
+			log.Println("List:Atoi(RoleId)错误")
+			log.Println(err.Error())
 			return
 		}
 		MemberList = append(MemberList, vo.TMember{
@@ -306,6 +311,7 @@ func (ctl UserController) List(c *gin.Context) {
 			MemberList []vo.TMember
 		}{MemberList: MemberList},
 	})
+	log.Println("List:查询成功，Code=0")
 }
 
 func (ctl UserController) Update(c *gin.Context) {
@@ -313,13 +319,15 @@ func (ctl UserController) Update(c *gin.Context) {
 
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusOK, vo.UpdateMemberResponse{Code: vo.UnknownError})
-		panic(err.Error())
+		log.Println("Update:参数BindJSON错误")
+		log.Println(err.Error())
 		return
 	}
 
 	//检查数据合法性
 	if len(req.Nickname) < 4 || len(req.Nickname) > 20 {
 		c.JSON(http.StatusOK, vo.UpdateMemberResponse{Code: vo.ParamInvalid})
+		log.Println("Update:Nickname不合法")
 		return
 	}
 
@@ -327,34 +335,28 @@ func (ctl UserController) Update(c *gin.Context) {
 	if err == redis.Nil {
 		//用户不存在
 		c.JSON(http.StatusOK, vo.UpdateMemberResponse{Code: vo.UserNotExisted})
+		log.Println("Update:用户不存在")
 		return
 	} else if err != nil {
 		//Redis错误
 		c.JSON(http.StatusOK, vo.UpdateMemberResponse{Code: vo.UnknownError})
-		panic(err.Error())
+		log.Println("Update:Redis get错误")
+		log.Println(err.Error())
 		return
 	} else {
 		var user model.User
 		if err := json.Unmarshal([]byte(val), &user); err != nil {
 			//JSON解析错误
 			c.JSON(http.StatusOK, vo.UpdateMemberResponse{Code: vo.UnknownError})
-			panic(err.Error())
+			log.Println("Update:Unmarshal解析错误")
+			log.Println(err.Error())
 			return
 		}
-
-		/*检查用户不存在(old)
-		if err := ctl.DB.Take(&user, req.UserID).Error; err != nil {
-			if errors.Is(err, gorm.ErrRecordNotFound) {
-				c.JSON(http.StatusOK, vo.UpdateMemberResponse{Code: vo.UserNotExisted})
-				return
-			} else {
-				panic(err.Error())
-			}
-		}*/
 
 		//检查用户已删除
 		if user.Enabled == 0 {
 			c.JSON(http.StatusOK, vo.UpdateMemberResponse{Code: vo.UserHasDeleted})
+			log.Println("Update:用户已删除")
 			return
 		}
 
@@ -364,24 +366,28 @@ func (ctl UserController) Update(c *gin.Context) {
 		if err != nil {
 			//JSON解析错误
 			c.JSON(http.StatusOK, vo.UpdateMemberResponse{Code: vo.UnknownError})
-			panic(err.Error())
+			log.Println("Update:Marshal解析错误")
+			log.Println(err.Error())
 			return
 		}
 		//存入redis
 		err = ctl.RDB.Set(ctl.Ctx, fmt.Sprintf("user:%d", user.Uuid), val, 0).Err()
 		if err != nil {
 			c.JSON(http.StatusOK, vo.UpdateMemberResponse{Code: vo.UnknownError})
-			panic(err.Error())
+			log.Println("Update:Redis set错误")
+			log.Println(err.Error())
 			return
 		}
 		//存入mysql
 		if err := ctl.DB.Model(&user).Update("nick_name", req.Nickname).Error; err != nil {
 			c.JSON(http.StatusOK, vo.UpdateMemberResponse{Code: vo.UnknownError})
-			panic(err.Error())
+			log.Println("Update:Mysql写入错误")
+			log.Println(err.Error())
 			return
 		}
 
 		c.JSON(http.StatusOK, vo.UpdateMemberResponse{Code: vo.OK})
+		log.Println("Update:修改成功，Code=0")
 	}
 }
 
@@ -390,7 +396,8 @@ func (ctl UserController) Delete(c *gin.Context) {
 
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusOK, vo.DeleteMemberResponse{Code: vo.UnknownError})
-		panic(err.Error())
+		log.Println("Delete:参数BindJSON错误")
+		log.Println(err.Error())
 		return
 	}
 
@@ -398,24 +405,28 @@ func (ctl UserController) Delete(c *gin.Context) {
 	if err == redis.Nil {
 		//用户不存在
 		c.JSON(http.StatusOK, vo.DeleteMemberResponse{Code: vo.UserNotExisted})
+		log.Println("Delete:用户不存在")
 		return
 	} else if err != nil {
 		//Redis错误
 		c.JSON(http.StatusOK, vo.DeleteMemberResponse{Code: vo.UnknownError})
-		panic(err.Error())
+		log.Println("Delete:Redis get错误")
+		log.Println(err.Error())
 		return
 	} else {
 		var user model.User
 		if err := json.Unmarshal([]byte(val), &user); err != nil {
 			//JSON解析错误
 			c.JSON(http.StatusOK, vo.DeleteMemberResponse{Code: vo.UnknownError})
-			panic(err.Error())
+			log.Println("Delete:Unmarshal解析错误")
+			log.Println(err.Error())
 			return
 		}
 
 		//检查用户已删除
 		if user.Enabled == 0 {
 			c.JSON(http.StatusOK, vo.DeleteMemberResponse{Code: vo.UserHasDeleted})
+			log.Println("Delete:用户已删除")
 			return
 		}
 
@@ -425,23 +436,27 @@ func (ctl UserController) Delete(c *gin.Context) {
 		if err != nil {
 			//JSON解析错误
 			c.JSON(http.StatusOK, vo.DeleteMemberResponse{Code: vo.UnknownError})
-			panic(err.Error())
+			log.Println("Delete:Marshal解析错误")
+			log.Println(err.Error())
 			return
 		}
 		//存入redis
 		err = ctl.RDB.Set(ctl.Ctx, fmt.Sprintf("user:%d", user.Uuid), val, 0).Err()
 		if err != nil {
 			c.JSON(http.StatusOK, vo.DeleteMemberResponse{Code: vo.UnknownError})
-			panic(err.Error())
+			log.Println("Delete:Redis set错误")
+			log.Println(err.Error())
 			return
 		}
 		//存入mysql
 		if err := ctl.DB.Model(&user).Update("enabled", "0").Error; err != nil {
 			c.JSON(http.StatusOK, vo.DeleteMemberResponse{Code: vo.UnknownError})
-			panic(err.Error())
+			log.Println("Delete:Mysql写入错误")
+			log.Println(err.Error())
 			return
 		}
 
 		c.JSON(http.StatusOK, vo.DeleteMemberResponse{Code: vo.OK})
+		log.Println("Delete:删除成功，Code=0")
 	}
 }
