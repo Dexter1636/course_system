@@ -6,6 +6,7 @@ import (
 	"course_system/repository"
 	"course_system/vo"
 	"github.com/gin-gonic/gin"
+	"log"
 	"net/http"
 	"strconv"
 )
@@ -16,11 +17,15 @@ type ICourseCommonController interface {
 }
 
 type CourseCommonController struct {
-	repo repository.ICourseRepository
+	repo            repository.ICourseRepository
+	courseRedisRepo repository.ICourseRedisRepository
 }
 
 func NewCourseCommonController() ICourseCommonController {
-	return CourseCommonController{repo: repository.NewCourseRepository()}
+	return CourseCommonController{
+		repo:            repository.NewCourseRepository(),
+		courseRedisRepo: repository.NewCourseRedisRepository(),
+	}
 }
 
 func (ctl CourseCommonController) CreateCourse(c *gin.Context) {
@@ -31,14 +36,18 @@ func (ctl CourseCommonController) CreateCourse(c *gin.Context) {
 		panic(err.Error())
 	}
 
-	// create course
+	// course instance
 	course := model.Course{
 		Name:  req.Name,
 		Cap:   req.Cap,
 		Avail: req.Cap,
 	}
 
+	// create course in MySQL
 	code := ctl.repo.CreateCourse(&course)
+
+	// create course in Redis
+	code = ctl.courseRedisRepo.CreateCourse(&course)
 
 	// response
 	c.JSON(http.StatusOK, vo.CreateCourseResponse{
@@ -47,6 +56,7 @@ func (ctl CourseCommonController) CreateCourse(c *gin.Context) {
 			CourseID string
 		}{CourseID: strconv.FormatInt(course.Id, 10)},
 	})
+	log.Printf("code: %d\n\n", code)
 
 }
 
@@ -61,10 +71,11 @@ func (ctl CourseCommonController) GetCourse(c *gin.Context) {
 			Code: code,
 			Data: dto.ToTCourse(course),
 		})
+		log.Printf("code: %d\n\n", code)
 	}()
 
 	// validate data
-	if err := c.ShouldBindJSON(&req); err != nil {
+	if err := c.ShouldBindQuery(&req); err != nil {
 		panic(err.Error())
 	}
 	courseId, err := strconv.ParseInt(req.CourseID, 10, 64)
@@ -73,5 +84,5 @@ func (ctl CourseCommonController) GetCourse(c *gin.Context) {
 	}
 
 	// get course
-	code = ctl.repo.GetCourseById(courseId, &course)
+	code = ctl.courseRedisRepo.GetCourseById(courseId, &course)
 }

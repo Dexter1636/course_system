@@ -4,6 +4,7 @@ import (
 	"context"
 	"course_system/model"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"github.com/go-redis/redis/v8"
 	"github.com/spf13/viper"
@@ -40,6 +41,17 @@ func InitDb() {
 	}
 	DB = db
 	fmt.Println("Connected to database.")
+
+	// TODO: 删除以避免循环依赖
+	// @Author 彭守恒 2022-02-15 02:45 删除以避免循环依赖
+	// data.CheckAdmin()
+	var u model.User
+	if err := DB.Where("user_name = ?", "JudgeAdmin").Take(&u).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			GetDB().Exec("INSERT INTO user(uuid, user_name, nick_name, password, role_id, enabled) " +
+				"VALUES (1, 'JudgeAdmin', 'JudgeAdmin', 'JudgePassword2022', '1', 1)")
+		}
+	}
 }
 
 func InitRedisData() {

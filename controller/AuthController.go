@@ -24,8 +24,9 @@ type IAuthController interface {
 }
 
 //方便修改cooki域名
-//var ckdomain string = "0.0.0.0"
-var ckdomain string = "180.184.74.137"
+var ckdomain string = "0.0.0.0"
+
+//var ckdomain string = "180.184.74.137"
 
 type AuthController struct {
 	DB  *gorm.DB
@@ -51,6 +52,7 @@ func (ctl AuthController) Login(c *gin.Context) {
 
 	//response, ErrNo, UserID
 	defer func() {
+		log.Println("[login] ErrNo: ", code)
 		c.JSON(http.StatusOK, vo.LoginResponse{
 			Code: code,
 			Data: struct {
@@ -73,28 +75,32 @@ func (ctl AuthController) Login(c *gin.Context) {
 	if (len(req.Password) > 20 || len(req.Password) < 8 || !rp) ||
 		(len(req.Username) < 8 || len(req.Username) > 20 || !ru) {
 		code = vo.WrongPassword //修改返回的错误码,220208
+		log.Println("[login]: ParamInvalid")
 		return
 	}
 
-	//login登录的参数为用户名和密码，不知uuid，直接上mysql查询
 	//根据用户名查询, 无用户
 	if err := ctl.DB.Where("user_name = ?", req.Username).Take(&user).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			code = vo.WrongPassword
-			log.Println("login: no such user")
+			log.Println("[login]: no such user")
+			return
+		} else {
+			code = vo.UnknownError
+			log.Println("[login]: UnkonwnError")
 			return
 		}
 	}
 	//用户已被删除, 文档中未要求, 但感觉应该加上这种情况
 	if user.Enabled == 0 {
 		code = vo.WrongPassword //修改返回的错误码,220208
-		log.Println("login: user has deleted")
+		log.Println("[login]: user has deleted")
 		return
 	}
 	//密码错误
 	if user.Password != req.Password {
 		code = vo.WrongPassword
-		log.Println("login: wrong password")
+		log.Println("[login]: wrong password")
 		return
 	}
 
@@ -110,6 +116,7 @@ func (ctl AuthController) Logout(c *gin.Context) {
 
 	//response, ErrNo
 	defer func() {
+		log.Println("[logout] ErrNo: ", code)
 		c.JSON(http.StatusOK, vo.LogoutResponse{
 			Code: code,
 		})
@@ -119,7 +126,7 @@ func (ctl AuthController) Logout(c *gin.Context) {
 	_, err := c.Cookie("camp-session")
 	if err != nil {
 		code = vo.LoginRequired
-		log.Println("logout: no cookie, login required")
+		log.Println("[logout]: no cookie, login required")
 		return
 	}
 	//将cookie的maxage设置为-1
@@ -135,6 +142,7 @@ func (ctl AuthController) WhoAmI(c *gin.Context) {
 
 	//response, ErrNo, user
 	defer func() {
+		log.Println("[WhoAmI] ErrNo:  ", code)
 		RoleID, _ := strconv.Atoi(user.RoleId)
 		c.JSON(http.StatusOK, vo.WhoAmIResponse{
 			Code: code,
@@ -151,7 +159,7 @@ func (ctl AuthController) WhoAmI(c *gin.Context) {
 	//无cookie, 需要登录
 	if err != nil {
 		code = vo.LoginRequired
-		log.Println("WhoAmI: no cookie, loginrequired")
+		log.Println("[WhoAmI]: no cookie, loginrequired")
 		return
 	}
 	//有cookie, 根据存的Uuid获取信息
@@ -170,22 +178,26 @@ func (ctl AuthController) WhoAmI(c *gin.Context) {
 	if err == redis.Nil {
 		//用户不存在
 		code = vo.UserNotExisted
+		log.Println("[WhoAmI]: UserNotExisted")
 		return
 	} else if err != nil {
 		//Redis错误
 		code = vo.UnknownError
+		log.Println("[WhoAmI]: Redis Error")
 		panic(err.Error())
 		return
 	} else {
 		if err := json.Unmarshal([]byte(val), &user); err != nil {
 			//JSON解析错误
 			code = vo.UnknownError
+			log.Println("[WhoAmI]: JSON error")
 			panic(err.Error())
 			return
 		}
 
 		if user.Enabled == 0 {
 			code = vo.UserHasDeleted
+			log.Println("[WhoAmI]: USerHasDeleted")
 			return
 		}
 
