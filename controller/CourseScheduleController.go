@@ -11,6 +11,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/go-redis/redis/v8"
 	"gorm.io/gorm"
+	"log"
 	"net/http"
 	"strconv"
 )
@@ -47,18 +48,22 @@ func (ctl CourseScheduleController) Bind(c *gin.Context) {
 		c.JSON(http.StatusOK, vo.BindCourseResponse{Code: vo.ParamInvalid})
 		return
 	}
-
+	log.Println("Bind ", req.CourseID, " ", req.TeacherID)
 	val, err4 := ctl.RDB.Get(ctl.Ctx, fmt.Sprintf("course:%s", req.CourseID)).Result()
 	if err4 == redis.Nil {
 		//course not exist
+		log.Println("Bind Case 1")
 		c.JSON(http.StatusOK, vo.BindCourseResponse{Code: vo.CourseNotExisted})
 		return
 	} else if err4 != nil {
 		//Redis错误
+		log.Println("Bind Case 2")
 		c.JSON(http.StatusOK, vo.BindCourseResponse{Code: vo.UnknownError})
 		return
 	} else {
+		log.Println("Bind Case 3")
 		if err4 := json.Unmarshal([]byte(val), &sample); err4 != nil {
+			log.Println("Bind Case 4")
 			//JSON解析错误
 			c.JSON(http.StatusOK, vo.BindCourseResponse{Code: vo.UnknownError})
 			return
@@ -66,6 +71,7 @@ func (ctl CourseScheduleController) Bind(c *gin.Context) {
 	}
 
 	if sample.TeacherId != 0 {
+		log.Println("Bind Case 5")
 		c.JSON(http.StatusOK, vo.BindCourseResponse{Code: vo.CourseHasBound})
 		return
 	}
@@ -73,6 +79,7 @@ func (ctl CourseScheduleController) Bind(c *gin.Context) {
 	val2, err3 := json.Marshal(sample)
 	if err3 != nil {
 		//JSON解析错误
+		log.Println("Bind Case 6")
 		c.JSON(http.StatusOK, vo.BindCourseResponse{Code: vo.UnknownError})
 		return
 	}
@@ -81,12 +88,14 @@ func (ctl CourseScheduleController) Bind(c *gin.Context) {
 
 	err5 := ctl.RDB.Set(ctl.Ctx, fmt.Sprintf("course:%s", req.CourseID), val2, 0).Err()
 	if err5 != nil {
+		log.Println("Bind Case 7")
 		c.JSON(http.StatusOK, vo.BindCourseResponse{Code: vo.UnknownError})
 		panic(err5.Error())
 		return
 	}
 	//存入mysql
 	if err := ctl.DB.Model(&model.Course{}).First(&sample, number2).Update("TeacherId", req.TeacherID).Error; err != nil {
+		log.Println("Bind Case 8")
 		c.JSON(http.StatusOK, vo.BindCourseResponse{Code: vo.UnknownError})
 		return
 	}
@@ -118,28 +127,34 @@ func (ctl CourseScheduleController) Unbind(c *gin.Context) {
 		c.JSON(http.StatusOK, vo.UnbindCourseResponse{Code: vo.ParamInvalid})
 		return
 	}
-
+	log.Println("UnBind ", req.CourseID, " ", req.TeacherID)
 	val, err4 := ctl.RDB.Get(ctl.Ctx, fmt.Sprintf("course:%s", req.CourseID)).Result()
 	if err4 == redis.Nil {
 		//course not exist
+		log.Println("UnBind Case 1")
 		c.JSON(http.StatusOK, vo.UnbindCourseResponse{Code: vo.CourseNotExisted})
 		return
 	} else if err4 != nil {
 		//Redis错误
+		log.Println("UnBind Case 2")
 		c.JSON(http.StatusOK, vo.UnbindCourseResponse{Code: vo.UnknownError})
 		return
 	} else {
+		log.Println("UnBind Case 3")
 		if err := json.Unmarshal([]byte(val), &sample); err != nil {
+			log.Println("UnBind Case 4")
 			//JSON解析错误
 			c.JSON(http.StatusOK, vo.UnbindCourseResponse{Code: vo.UnknownError})
 			return
 		}
 	}
 	if sample.TeacherId == 0 {
+		log.Println("UnBind Case 5")
 		c.JSON(http.StatusOK, vo.UnbindCourseResponse{Code: vo.CourseNotBind})
 		return
 	}
 	if sample.TeacherId != number2 {
+		log.Println("UnBind Case 6")
 		c.JSON(http.StatusOK, vo.UnbindCourseResponse{Code: vo.UserNotExisted})
 		return
 	}
@@ -147,18 +162,21 @@ func (ctl CourseScheduleController) Unbind(c *gin.Context) {
 	val2, err3 := json.Marshal(sample)
 	if err3 != nil {
 		//JSON解析错误
+		log.Println("UnBind Case 7")
 		c.JSON(http.StatusOK, vo.UnbindCourseResponse{Code: vo.UnknownError})
 		return
 	}
 	//存入redis
 	err := ctl.RDB.Set(ctl.Ctx, fmt.Sprintf("course:%s", req.CourseID), val2, 0).Err()
 	if err != nil {
+		log.Println("UnBind Case 8")
 		c.JSON(http.StatusOK, vo.UnbindCourseResponse{Code: vo.UnknownError})
 		panic(err.Error())
 		return
 	}
 	//存入mysql
 	if err := ctl.DB.Model(&model.Course{}).First(&sample, number).Update("TeacherId", 0).Error; err != nil {
+		log.Println("UnBind Case 9")
 		c.JSON(http.StatusOK, vo.UnbindCourseResponse{Code: vo.UnknownError})
 		panic(err.Error())
 		return
@@ -285,6 +303,7 @@ func (ctl CourseScheduleController) Schedule(c *gin.Context) {
 			}
 		}
 	}
+	log.Println("schedule:", n, " ", m, " ", nums)
 	a = make([]node, nums+10)
 	q = make([]int, n+m+10)
 	v = make([]bool, nums+10)
