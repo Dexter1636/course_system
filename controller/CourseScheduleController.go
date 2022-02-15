@@ -43,7 +43,9 @@ func (ctl CourseScheduleController) Bind(c *gin.Context) {
 		return
 	}
 	a := ctl.DB.Model(&model.Course{}).First(&sample, number)
-	if a.RowsAffected == 0 {
+	if a.Error != nil {
+		c.JSON(http.StatusOK, vo.BindCourseResponse{Code: vo.UnknownError})
+	} else if a.RowsAffected == 0 {
 		c.JSON(http.StatusOK, vo.BindCourseResponse{Code: vo.CourseNotExisted})
 	} else if sample.TeacherId != 0 {
 		c.JSON(http.StatusOK, vo.BindCourseResponse{Code: vo.CourseHasBound})
@@ -70,7 +72,9 @@ func (ctl CourseScheduleController) Unbind(c *gin.Context) {
 		return
 	}
 	a := ctl.DB.Model(&model.Course{}).First(&sample, number)
-	if a.RowsAffected == 0 {
+	if a.Error != nil {
+		c.JSON(http.StatusOK, vo.UnbindCourseResponse{Code: vo.UnknownError})
+	} else if a.RowsAffected == 0 {
 		c.JSON(http.StatusOK, vo.UnbindCourseResponse{Code: vo.CourseNotExisted})
 	} else if sample.TeacherId == 0 {
 		c.JSON(http.StatusOK, vo.UnbindCourseResponse{Code: vo.CourseNotBind})
@@ -94,6 +98,10 @@ func (ctl CourseScheduleController) Get(c *gin.Context) {
 	var rows []model.Course
 	var ans vo.GetTeacherCourseResponse
 	result := ctl.DB.Model(&model.Course{}).Where("teacher_id = ?", number).Find(&rows)
+	if result.Error != nil {
+		c.JSON(http.StatusOK, vo.GetCourseResponse{Code: vo.UnknownError})
+		return
+	}
 	ans.Data.CourseList = make([]*vo.TCourse, result.RowsAffected)
 	for i := 0; i < int(result.RowsAffected); i++ {
 		ans.Data.CourseList[i] = new(vo.TCourse)
