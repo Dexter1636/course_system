@@ -38,6 +38,12 @@ func InitDb() {
 	if err != nil {
 		panic("failed to connect to database, err: " + err.Error())
 	}
+	// set connection pool size
+	sqlDB, err := db.DB()
+	if err != nil {
+		panic("failed to config db connection pool, err: " + err.Error())
+	}
+	sqlDB.SetMaxOpenConns(150)
 	DB = db
 	fmt.Println("Connected to database.")
 
