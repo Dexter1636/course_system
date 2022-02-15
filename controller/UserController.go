@@ -11,6 +11,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/go-redis/redis/v8"
 	"gorm.io/gorm"
+	"log"
 	"net/http"
 	"regexp"
 	"strconv"
@@ -49,6 +50,7 @@ func (ctl UserController) Create(c *gin.Context) {
 	if err := c.ShouldBindJSON(&req); err != nil {
 		code = vo.UnknownError
 		panic(err.Error())
+		log.Println("CreateMember:ShouldBindJSON error")
 		return
 	}
 
@@ -57,6 +59,7 @@ func (ctl UserController) Create(c *gin.Context) {
 	cookie, err := c.Cookie("camp-session")
 	if err != nil {
 		code = vo.LoginRequired
+		log.Println("CreateMember:Login Required")
 		return
 	}
 	uuidT, err := strconv.ParseInt(cookie, 10, 64)
@@ -65,10 +68,12 @@ func (ctl UserController) Create(c *gin.Context) {
 	if err == redis.Nil {
 		//用户不存在
 		code = vo.UserNotExisted
+		log.Println("CreateMember:UserNotExisted while login check")
 		return
 	} else if err != nil {
 		//Redis错误
 		code = vo.UnknownError
+		log.Println("CreateMember:redis-error while login check")
 		panic(err.Error())
 		return
 	} else {
@@ -76,11 +81,18 @@ func (ctl UserController) Create(c *gin.Context) {
 		if err := json.Unmarshal([]byte(val), &user); err != nil {
 			//JSON解析错误
 			code = vo.UnknownError
+			log.Println("CreateMember:json-error while login check")
 			panic(err.Error())
+			return
+		}
+		if user.Enabled == 0 {
+			code = vo.UserHasDeleted
+			log.Println("CreateMember:UserHasDeleted")
 			return
 		}
 		if user.RoleId != "1" {
 			code = vo.PermDenied
+			log.Println("CreateMember:PermDenied cause user not admin")
 			return
 		}
 	}
@@ -115,11 +127,12 @@ func (ctl UserController) Create(c *gin.Context) {
 		(len(req.Username) < 8 || len(req.Username) > 20 || !ru) ||
 		(req.UserType > 3 || req.UserType < 1) {
 		code = vo.ParamInvalid
+		log.Println("CreateMember:ParamInvalid")
 		return
 	}
 
 	rid := strconv.FormatInt(int64(int(req.UserType)), 10)
-	user = model.User{Uuid: 0, UserName: req.Username, NickName: req.Nickname,
+	user = model.User{UserName: req.Username, NickName: req.Nickname,
 		Password: req.Password, RoleId: rid, Enabled: 1}
 
 	if err := ctl.DB.Where("user_name = ?", req.Username).Take(&u).Error; err != nil {
@@ -129,6 +142,7 @@ func (ctl UserController) Create(c *gin.Context) {
 			if err != nil {
 				//JSON解析错误
 				code = vo.UnknownError
+				log.Println("CreateMember:JSON-error while creating")
 				panic(err.Error())
 				return
 			}
@@ -137,18 +151,22 @@ func (ctl UserController) Create(c *gin.Context) {
 			if err != nil {
 				code = vo.UnknownError
 				panic(err.Error())
+				log.Println("CreateMember:redis-error while creating")
 				return
 			}
+			log.Println("CreateMember:Successfully create, userid:" + strconv.FormatInt(user.Uuid, 10))
 			return
 		} else {
 			code = vo.UnknownError
 			panic(err.Error())
+			log.Println("CreateMember:Unknown-error while creating")
 			return
 		}
 	}
 
 	//用户已经存在
 	code = vo.UserHasExisted
+	log.Println("CreateMember:UserExisted")
 	return
 }
 
@@ -170,15 +188,18 @@ func (ctl UserController) Member(c *gin.Context) {
 	var req vo.GetMemberRequest
 
 	req.UserID = c.Query("UserID")
+	log.Print("GetMember: asking for uuid:" + req.UserID)
 
 	val, err := ctl.RDB.Get(ctl.Ctx, fmt.Sprintf("user:%s", req.UserID)).Result()
 	if err == redis.Nil {
 		//用户不存在
 		code = vo.UserNotExisted
+		log.Print("GetMember:UserNotExisted")
 		return
 	} else if err != nil {
 		//Redis错误
 		code = vo.UnknownError
+		log.Println("Member:redis-error")
 		panic(err.Error())
 		return
 	} else {
@@ -186,15 +207,17 @@ func (ctl UserController) Member(c *gin.Context) {
 			//JSON解析错误
 			code = vo.UnknownError
 			panic(err.Error())
+			log.Println("Member:JSON-error")
 			return
 		}
 
 		//检查用户已删除
 		if user.Enabled == 0 {
 			code = vo.UserHasDeleted
+			log.Print("GetMember:UserHasDeleted")
 			return
 		}
-
+		log.Print("GetMember:Return Successfully,username:" + user.UserName)
 		//返回TMember
 		return
 	}
