@@ -6,7 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-  "github.com/go-redis/redis/v8"
+	"github.com/go-redis/redis/v8"
 	"github.com/spf13/viper"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
@@ -26,12 +26,14 @@ func InitDb() {
 	username := viper.GetString("datasource.username")
 	password := viper.GetString("datasource.password")
 	charset := viper.GetString("datasource.charset")
-	loggerLevel := viper.GetString("logger.level")
+	//loggerLevel := viper.GetString("logger.level")
 	dsn := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?charset=%s&parseTime=true",
 		username, password, host, port, database, charset)
 	// config
 	config := &gorm.Config{}
-	if loggerLevel == "info" {
+	if env == "production" {
+		config.Logger = logger.New(fileLogger, logger.Config{LogLevel: logger.Info, Colorful: false})
+	} else {
 		config.Logger = logger.Default.LogMode(logger.Info)
 	}
 	// Get a database handle.
