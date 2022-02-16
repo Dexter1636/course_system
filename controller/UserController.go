@@ -60,6 +60,7 @@ func (ctl UserController) Create(c *gin.Context) {
 	if err != nil {
 		code = vo.LoginRequired
 		log.Println("CreateMember:Login Required")
+		log.Println(err)
 		return
 	}
 	uuidT, err := strconv.ParseInt(cookie, 10, 64)
