@@ -309,10 +309,10 @@ func (ctl CourseScheduleController) Schedule(c *gin.Context) {
 		}
 	}
 	log.Println("schedule:", n, " ", m, " ", nums)
-	a = make([]node, nums+10)
-	q = make([]int, n+m+10)
-	v = make([]bool, nums+10)
-	match = make([]int, n+m+10)
+	a = make([]node, n+m+nums+10000)
+	q = make([]int, n+m+nums+10000)
+	v = make([]bool, n+m+nums+10000)
+	match = make([]int, n+m+nums+10000)
 	tot = n + m
 	for i := 1; i <= n+m; i++ {
 		q[i] = i
