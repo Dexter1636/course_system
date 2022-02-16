@@ -1,6 +1,6 @@
 # Course System
 
-This is the project of Group 28 for ByteCamp 2022 Winter.
+This is the project for ByteCamp 2022 Winter, developed with :heart: by `Group 28`.
 
 ## Quick Start
 
