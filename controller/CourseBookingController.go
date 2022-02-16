@@ -5,6 +5,7 @@ import (
 	"course_system/common"
 	"course_system/model"
 	"course_system/repository"
+	"course_system/utils"
 	"course_system/vo"
 	"errors"
 	"fmt"
@@ -57,6 +58,10 @@ func (ctl CourseBookingController) BookCourse(c *gin.Context) {
 		code = vo.ParamInvalid
 		return
 	}
+	// log request body
+	utils.LogReqBody(req, "BookCourse.req")
+
+	// validate data
 	studentId, err := strconv.ParseInt(req.StudentID, 10, 64)
 	if err != nil {
 		code = vo.ParamInvalid
