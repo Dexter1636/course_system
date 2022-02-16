@@ -48,10 +48,10 @@ func InitDb() {
 	if err != nil {
 		panic("failed to config db connection pool, err: " + err.Error())
 	}
-	sqlDB.SetMaxOpenConns(150)
+	sqlDB.SetMaxOpenConns(190)
 	DB = db
 	fmt.Println("Connected to database.")
-	
+
 	// @Author 彭守恒 2022-02-15 02:45 删除以避免循环依赖
 	// data.CheckAdmin()
 	var u model.User
