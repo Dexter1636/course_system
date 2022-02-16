@@ -32,12 +32,12 @@ func InitLogger() {
 		if err := os.MkdirAll(logFilePath, 0777); err != nil {
 			panic(err.Error())
 		}
-
-		gin.DisableConsoleColor()
 		f, err := os.Create(fileName)
 		if err != nil {
 			panic(err.Error())
 		}
+
+		gin.DisableConsoleColor()
 		gin.DefaultWriter = io.MultiWriter(f)
 		fileLogger = log.New(f, "\r\n", log.LstdFlags)
 		log.SetOutput(f)
