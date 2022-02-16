@@ -48,18 +48,21 @@ func NewCourseBookingController() ICourseBookingController {
 
 func (ctl CourseBookingController) BookCourse(c *gin.Context) {
 	var req vo.BookCourseRequest
+	var resp vo.BookCourseResponse
 	code := vo.OK
 
 	// response
-	defer func() { c.JSON(http.StatusOK, vo.BookCourseResponse{Code: code}) }()
+	defer func() {
+		resp = vo.BookCourseResponse{Code: code}
+		c.JSON(http.StatusOK, resp)
+		utils.LogReqRespBody(req, resp, "BookCourse")
+	}()
 
 	// validate data
 	if err := c.ShouldBindJSON(&req); err != nil {
 		code = vo.ParamInvalid
 		return
 	}
-	// log request body
-	utils.LogReqBody(req, "BookCourse.req")
 
 	// validate data
 	studentId, err := strconv.ParseInt(req.StudentID, 10, 64)
@@ -187,19 +190,21 @@ func (ctl CourseBookingController) BookCourse(c *gin.Context) {
 
 func (ctl CourseBookingController) GetStudentCourse(c *gin.Context) {
 	var req vo.GetStudentCourseRequest
+	var resp vo.GetStudentCourseResponse
 	code := vo.OK
 	courseList := make([]model.Course, 0, 8)
 	tCourseList := make([]vo.TCourse, 0, 8)
 
 	// response
 	defer func() {
-		c.JSON(http.StatusOK, vo.GetStudentCourseResponse{
+		resp = vo.GetStudentCourseResponse{
 			Code: code,
 			Data: struct {
 				CourseList []vo.TCourse
 			}{tCourseList},
-		})
-		log.Printf("code: %d\n\n", code)
+		}
+		c.JSON(http.StatusOK, resp)
+		utils.LogReqRespBody(req, resp, "BookCourse")
 	}()
 
 	// validate data

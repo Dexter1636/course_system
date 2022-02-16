@@ -52,7 +52,7 @@ func (ctl CourseCommonController) CreateCourse(c *gin.Context) {
 	}
 
 	// log request body
-	utils.LogReqBody(req, "CreateCourse.req")
+	utils.LogBody(req, "CreateCourse.req")
 
 	// course instance
 	course = model.Course{
