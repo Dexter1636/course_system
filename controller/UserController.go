@@ -67,7 +67,7 @@ func (ctl UserController) Create(c *gin.Context) {
 	//	return
 	//}
 	//获取session
-	session, err := Store.Get(c.Request, "camp-seesion")
+	session, err := Store.Get(c.Request, "camp-session")
 	if session.IsNew || err != nil {
 		code = vo.LoginRequired
 		log.Println("[WhoAmI] : no session, ")

@@ -117,7 +117,7 @@ func (ctl AuthController) Login(c *gin.Context) {
 
 	//设置cookie，存储uuid
 	//c.SetCookie("camp-session", strconv.FormatInt(user.Uuid, 10), 0, "/", "", false, false)
-	session, _ := Store.Get(c.Request, "camp-seesion")
+	session, _ := Store.Get(c.Request, "camp-session")
 	session.Options.MaxAge = 3600 * 24 * 7
 	// 存储string,方便后面查redis
 	session.Values["UserID"] = strconv.FormatInt(user.Uuid, 10)
@@ -155,7 +155,7 @@ func (ctl AuthController) Logout(c *gin.Context) {
 	//log.Println("[logout]: cookievalue: " + ck)
 	//c.SetCookie("camp-session", "", -1, "/", "", false, false)
 
-	session, err := Store.Get(c.Request, "camp-seesion")
+	session, err := Store.Get(c.Request, "camp-session")
 	if session.IsNew || err != nil {
 		code = vo.LoginRequired
 		log.Println("[logout]: session wrong")
@@ -218,7 +218,7 @@ func (ctl AuthController) WhoAmI(c *gin.Context) {
 	//	log.Println("[WhoAmI]: no cookie, loginrequired")
 	//	return
 	//}
-	session, err := Store.Get(c.Request, "camp-seesion")
+	session, err := Store.Get(c.Request, "camp-session")
 	if session.IsNew || err != nil {
 		code = vo.LoginRequired
 		log.Println("[WhoAmI] : no session, ")
