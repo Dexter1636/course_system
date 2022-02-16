@@ -4,6 +4,7 @@ import (
 	"context"
 	"course_system/common"
 	"course_system/model"
+	"course_system/utils"
 	"course_system/vo"
 	"encoding/json"
 	"errors"
@@ -41,10 +42,12 @@ func (ctl UserController) Create(c *gin.Context) {
 	code := vo.OK
 
 	defer func() {
-		c.JSON(http.StatusOK, vo.CreateMemberResponse{
+		resp := vo.CreateMemberResponse{
 			Code: code,
 			Data: struct{ UserID string }{UserID: strconv.FormatInt(user.Uuid, 10)},
-		})
+		}
+		c.JSON(http.StatusOK, resp)
+		utils.LogReqRespBody(req, resp, "CreateMember")
 	}()
 
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -60,6 +63,7 @@ func (ctl UserController) Create(c *gin.Context) {
 	if err != nil {
 		code = vo.LoginRequired
 		log.Println("CreateMember:Login Required")
+		log.Println(err)
 		return
 	}
 	uuidT, err := strconv.ParseInt(cookie, 10, 64)
@@ -175,15 +179,15 @@ func (ctl UserController) Member(c *gin.Context) {
 	var user model.User
 	defer func() {
 		RoleID, _ := strconv.Atoi(user.RoleId)
-		c.JSON(http.StatusOK, vo.GetMemberResponse{
+		resp := vo.GetMemberResponse{
 			Code: code,
 			Data: struct {
 				UserID   string
 				Nickname string
 				Username string
 				UserType vo.UserType
-			}{UserID: strconv.FormatInt(user.Uuid, 10), Nickname: user.NickName, Username: user.UserName, UserType: vo.UserType(RoleID)},
-		})
+			}{UserID: strconv.FormatInt(user.Uuid, 10), Nickname: user.NickName, Username: user.UserName, UserType: vo.UserType(RoleID)}}
+		c.JSON(http.StatusOK, resp)
 	}()
 	var req vo.GetMemberRequest
 
@@ -225,136 +229,125 @@ func (ctl UserController) Member(c *gin.Context) {
 
 func (ctl UserController) List(c *gin.Context) {
 	var req vo.GetMemberListRequest
+	var MemberList []vo.TMember
+	code := vo.OK
+
+	defer func() {
+		//防止返回NULL
+		if len(MemberList) == 0 {
+			MemberList = make([]vo.TMember, 0)
+		}
+		resp := vo.GetMemberListResponse{
+			Code: code,
+			Data: struct{ MemberList []vo.TMember }{MemberList: MemberList},
+		}
+		c.JSON(http.StatusOK, resp)
+		utils.LogReqRespBody(req, fmt.Sprintf("MemberList len: %d", len(MemberList)), "List")
+	}()
 
 	//读取数据
 	val, err := strconv.Atoi(c.Query("Limit"))
 	if err != nil {
-		c.JSON(http.StatusOK, vo.GetMemberListResponse{
-			Code: vo.UnknownError,
-			Data: struct {
-				MemberList []vo.TMember
-			}{MemberList: []vo.TMember{}},
-		})
-		panic(err.Error())
+		code = vo.ParamInvalid
+		log.Println("List:Limit参数错误")
+		log.Println(err.Error())
 		return
 	}
 	req.Limit = val
 	val, err = strconv.Atoi(c.Query("Offset"))
 	if err != nil {
-		c.JSON(http.StatusOK, vo.GetMemberListResponse{
-			Code: vo.UnknownError,
-			Data: struct {
-				MemberList []vo.TMember
-			}{MemberList: []vo.TMember{}},
-		})
-		panic(err.Error())
+		code = vo.ParamInvalid
+		log.Println("List:Offset参数错误")
+		log.Println(err.Error())
 		return
 	}
 	req.Offset = val
 
 	//Limit忽略时，不能存在Offset参数
 	if req.Limit <= 0 && req.Offset > 0 {
-		c.JSON(http.StatusOK, vo.GetMemberListResponse{
-			Code: vo.ParamInvalid,
-			Data: struct {
-				MemberList []vo.TMember
-			}{MemberList: []vo.TMember{}},
-		})
+		code = vo.ParamInvalid
+		log.Println("List:Limit不存在，存在Offset")
 		return
 	}
 
 	//查询数据库
 	var users []model.User
 	if err := ctl.DB.Offset(req.Offset).Limit(req.Limit).Find(&users).Error; err != nil {
-		c.JSON(http.StatusOK, vo.GetMemberListResponse{
-			Code: vo.UnknownError,
-			Data: struct {
-				MemberList []vo.TMember
-			}{MemberList: []vo.TMember{}},
-		})
-		panic(err.Error())
+		code = vo.UnknownError
+		log.Println("List:查询数据库错误")
+		log.Println(err.Error())
 		return
 	}
 
 	//获取数据
-	var MemberList []vo.TMember
 	for i := 0; i < len(users); i++ {
 		UserType, err := strconv.Atoi(users[i].RoleId)
 		if err != nil {
-			c.JSON(http.StatusOK, vo.GetMemberListResponse{
-				Code: vo.UnknownError,
-				Data: struct {
-					MemberList []vo.TMember
-				}{MemberList: []vo.TMember{}},
-			})
-			panic(err.Error())
+			code = vo.UnknownError
+			log.Println("List:Atoi(RoleId)错误")
+			log.Println(err.Error())
 			return
 		}
 		MemberList = append(MemberList, vo.TMember{
 			UserID: strconv.FormatInt(users[i].Uuid, 10), Nickname: users[i].NickName, Username: users[i].UserName, UserType: vo.UserType(UserType)})
 	}
 
-	//防止返回NULL
-	if len(MemberList) == 0 {
-		MemberList = make([]vo.TMember, 0)
-	}
-
 	//返回参数
-	c.JSON(http.StatusOK, vo.GetMemberListResponse{
-		Code: vo.OK,
-		Data: struct {
-			MemberList []vo.TMember
-		}{MemberList: MemberList},
-	})
+	log.Println("List:查询成功，Code=0")
 }
 
 func (ctl UserController) Update(c *gin.Context) {
 	var req vo.UpdateMemberRequest
+	code := vo.OK
+
+	defer func() {
+		resp := vo.UpdateMemberResponse{
+			Code: code,
+		}
+		c.JSON(http.StatusOK, resp)
+		utils.LogReqRespBody(req, resp, "Update")
+	}()
 
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusOK, vo.UpdateMemberResponse{Code: vo.UnknownError})
-		panic(err.Error())
+		code = vo.UnknownError
+		log.Println("Update:参数BindJSON错误")
+		log.Println(err.Error())
 		return
 	}
 
 	//检查数据合法性
 	if len(req.Nickname) < 4 || len(req.Nickname) > 20 {
-		c.JSON(http.StatusOK, vo.UpdateMemberResponse{Code: vo.ParamInvalid})
+		code = vo.ParamInvalid
+		log.Println("Update:Nickname不合法")
 		return
 	}
 
 	val, err := ctl.RDB.Get(ctl.Ctx, fmt.Sprintf("user:%s", req.UserID)).Result()
 	if err == redis.Nil {
 		//用户不存在
-		c.JSON(http.StatusOK, vo.UpdateMemberResponse{Code: vo.UserNotExisted})
+		code = vo.UserNotExisted
+		log.Println("Update:用户不存在")
 		return
 	} else if err != nil {
 		//Redis错误
-		c.JSON(http.StatusOK, vo.UpdateMemberResponse{Code: vo.UnknownError})
-		panic(err.Error())
+		code = vo.UnknownError
+		log.Println("Update:Redis get错误")
+		log.Println(err.Error())
 		return
 	} else {
 		var user model.User
 		if err := json.Unmarshal([]byte(val), &user); err != nil {
 			//JSON解析错误
-			c.JSON(http.StatusOK, vo.UpdateMemberResponse{Code: vo.UnknownError})
-			panic(err.Error())
+			code = vo.UnknownError
+			log.Println("Update:Unmarshal解析错误")
+			log.Println(err.Error())
 			return
 		}
 
-		/*检查用户不存在(old)
-		if err := ctl.DB.Take(&user, req.UserID).Error; err != nil {
-			if errors.Is(err, gorm.ErrRecordNotFound) {
-				c.JSON(http.StatusOK, vo.UpdateMemberResponse{Code: vo.UserNotExisted})
-				return
-			} else {
-				panic(err.Error())
-			}
-		}*/
-
 		//检查用户已删除
 		if user.Enabled == 0 {
-			c.JSON(http.StatusOK, vo.UpdateMemberResponse{Code: vo.UserHasDeleted})
+			code = vo.UserHasDeleted
+			log.Println("Update:用户已删除")
 			return
 		}
 
@@ -363,59 +356,76 @@ func (ctl UserController) Update(c *gin.Context) {
 		val, err := json.Marshal(user)
 		if err != nil {
 			//JSON解析错误
-			c.JSON(http.StatusOK, vo.UpdateMemberResponse{Code: vo.UnknownError})
-			panic(err.Error())
+			code = vo.UnknownError
+			log.Println("Update:Marshal解析错误")
+			log.Println(err.Error())
 			return
 		}
 		//存入redis
 		err = ctl.RDB.Set(ctl.Ctx, fmt.Sprintf("user:%d", user.Uuid), val, 0).Err()
 		if err != nil {
-			c.JSON(http.StatusOK, vo.UpdateMemberResponse{Code: vo.UnknownError})
-			panic(err.Error())
+			code = vo.UnknownError
+			log.Println("Update:Redis set错误")
+			log.Println(err.Error())
 			return
 		}
 		//存入mysql
 		if err := ctl.DB.Model(&user).Update("nick_name", req.Nickname).Error; err != nil {
-			c.JSON(http.StatusOK, vo.UpdateMemberResponse{Code: vo.UnknownError})
-			panic(err.Error())
+			code = vo.UnknownError
+			log.Println("Update:Mysql写入错误")
+			log.Println(err.Error())
 			return
 		}
 
-		c.JSON(http.StatusOK, vo.UpdateMemberResponse{Code: vo.OK})
+		log.Println("Update:修改成功，Code=0")
 	}
 }
 
 func (ctl UserController) Delete(c *gin.Context) {
 	var req vo.DeleteMemberRequest
+	code := vo.OK
+
+	defer func() {
+		resp := vo.DeleteMemberResponse{
+			Code: code,
+		}
+		c.JSON(http.StatusOK, resp)
+		utils.LogReqRespBody(req, resp, "Delete")
+	}()
 
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusOK, vo.DeleteMemberResponse{Code: vo.UnknownError})
-		panic(err.Error())
+		code = vo.UnknownError
+		log.Println("Delete:参数BindJSON错误")
+		log.Println(err.Error())
 		return
 	}
 
 	val, err := ctl.RDB.Get(ctl.Ctx, fmt.Sprintf("user:%s", req.UserID)).Result()
 	if err == redis.Nil {
 		//用户不存在
-		c.JSON(http.StatusOK, vo.DeleteMemberResponse{Code: vo.UserNotExisted})
+		code = vo.UserNotExisted
+		log.Println("Delete:用户不存在")
 		return
 	} else if err != nil {
 		//Redis错误
-		c.JSON(http.StatusOK, vo.DeleteMemberResponse{Code: vo.UnknownError})
-		panic(err.Error())
+		code = vo.UnknownError
+		log.Println("Delete:Redis get错误")
+		log.Println(err.Error())
 		return
 	} else {
 		var user model.User
 		if err := json.Unmarshal([]byte(val), &user); err != nil {
 			//JSON解析错误
-			c.JSON(http.StatusOK, vo.DeleteMemberResponse{Code: vo.UnknownError})
-			panic(err.Error())
+			code = vo.UnknownError
+			log.Println("Delete:Unmarshal解析错误")
+			log.Println(err.Error())
 			return
 		}
 
 		//检查用户已删除
 		if user.Enabled == 0 {
-			c.JSON(http.StatusOK, vo.DeleteMemberResponse{Code: vo.UserHasDeleted})
+			code = vo.UserHasDeleted
+			log.Println("Delete:用户已删除")
 			return
 		}
 
@@ -424,24 +434,27 @@ func (ctl UserController) Delete(c *gin.Context) {
 		val, err := json.Marshal(user)
 		if err != nil {
 			//JSON解析错误
-			c.JSON(http.StatusOK, vo.DeleteMemberResponse{Code: vo.UnknownError})
-			panic(err.Error())
+			code = vo.UnknownError
+			log.Println("Delete:Marshal解析错误")
+			log.Println(err.Error())
 			return
 		}
 		//存入redis
 		err = ctl.RDB.Set(ctl.Ctx, fmt.Sprintf("user:%d", user.Uuid), val, 0).Err()
 		if err != nil {
-			c.JSON(http.StatusOK, vo.DeleteMemberResponse{Code: vo.UnknownError})
-			panic(err.Error())
+			code = vo.UnknownError
+			log.Println("Delete:Redis set错误")
+			log.Println(err.Error())
 			return
 		}
 		//存入mysql
 		if err := ctl.DB.Model(&user).Update("enabled", "0").Error; err != nil {
-			c.JSON(http.StatusOK, vo.DeleteMemberResponse{Code: vo.UnknownError})
-			panic(err.Error())
+			code = vo.UnknownError
+			log.Println("Delete:Mysql写入错误")
+			log.Println(err.Error())
 			return
 		}
 
-		c.JSON(http.StatusOK, vo.DeleteMemberResponse{Code: vo.OK})
+		log.Println("Delete:删除成功，Code=0")
 	}
 }

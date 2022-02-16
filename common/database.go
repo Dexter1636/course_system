@@ -11,6 +11,8 @@ import (
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
+	"log"
+	"time"
 )
 
 var DB *gorm.DB
@@ -61,6 +63,47 @@ func InitDb() {
 	}
 }
 
+func MessageQueue() {
+	for {
+		count, err := RDB.LLen(Ctx, "MessageQueue").Result()
+		if err != nil {
+			log.Println(err.Error())
+		}
+		if count > 0 {
+			val, err := RDB.LPop(Ctx, "MessageQueue").Result()
+			if err != nil {
+				log.Println(err.Error())
+			}
+			var sc model.Sc
+			if err = json.Unmarshal([]byte(val), &sc); err != nil {
+				log.Println(err.Error())
+			}
+			err = DB.Transaction(func(tx *gorm.DB) error {
+				// check avail
+				course := model.Course{Id: sc.CourseId}
+				if err := tx.Select("avail").Take(&course, sc.CourseId).Error; err != nil {
+					return err
+				}
+				// update avail
+				course.Avail--
+				if err := tx.Model(&course).Update("avail", course.Avail).Error; err != nil {
+					return err
+				}
+				// create sc record
+				if err := tx.Create(&sc).Error; err != nil {
+					return err
+				}
+				return nil
+			})
+			if err != nil {
+				log.Println(err.Error())
+			}
+		} else {
+			time.Sleep(1 * time.Second)
+		}
+	}
+}
+
 func InitRedisData() {
 	//清空数据
 	RDB.FlushDB(Ctx)
@@ -105,6 +148,8 @@ func InitRedisData() {
 			panic(err.Error())
 		}
 	}
+	//初始化消息队列
+	go MessageQueue()
 }
 
 func InitRdb(ctx context.Context) {

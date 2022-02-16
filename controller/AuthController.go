@@ -4,6 +4,7 @@ import (
 	"context"
 	"course_system/common"
 	"course_system/model"
+	"course_system/utils"
 	"course_system/vo"
 	"encoding/json"
 	"errors"
@@ -22,10 +23,6 @@ type IAuthController interface {
 	Logout(c *gin.Context)
 	WhoAmI(c *gin.Context)
 }
-
-//方便修改cooki域名
-//var ckdomain string = "0.0.0.0"
-var ckdomain string = "180.184.74.137"
 
 type AuthController struct {
 	DB  *gorm.DB
@@ -47,17 +44,28 @@ func (ctl AuthController) Login(c *gin.Context) {
 	//POST方法，传参使用json，无需修改
 	var req vo.LoginRequest
 	var user model.User
+	var resp vo.LoginResponse
 	code := vo.OK
 
 	//response, ErrNo, UserID
 	defer func() {
-		log.Println("[login] ErrNo: ", code)
-		c.JSON(http.StatusOK, vo.LoginResponse{
-			Code: code,
-			Data: struct {
-				UserID string
-			}{strconv.FormatInt(user.Uuid, 10)},
-		})
+		if code == vo.OK {
+			resp = vo.LoginResponse{
+				Code: code,
+				Data: struct {
+					UserID string
+				}{strconv.FormatInt(user.Uuid, 10)},
+			}
+		} else {
+			resp = vo.LoginResponse{
+				Code: code,
+				Data: struct {
+					UserID string
+				}{""},
+			}
+		}
+		c.JSON(http.StatusOK, resp)
+		utils.LogReqRespBody(req, resp, "Login")
 	}()
 
 	//校验参数， 用户名、密码是否符合要求
@@ -104,8 +112,8 @@ func (ctl AuthController) Login(c *gin.Context) {
 	}
 
 	//设置cookie，存储uuid
-	c.SetCookie("camp-session", strconv.FormatInt(user.Uuid, 10), 0, "/", ckdomain, false, true)
-	log.Println("login:successfully login")
+	c.SetCookie("camp-session", strconv.FormatInt(user.Uuid, 10), 0, "/", "", false, false)
+	log.Println("[login]:successfully login, uuid:" + strconv.FormatInt(user.Uuid, 10))
 }
 
 //当用户点击退出按钮，销毁当前用户 Session 和认证 Cookie
@@ -122,14 +130,15 @@ func (ctl AuthController) Logout(c *gin.Context) {
 	}()
 
 	//无cookie, 需要登录
-	_, err := c.Cookie("camp-session")
+	ck, err := c.Cookie("camp-session")
 	if err != nil {
 		code = vo.LoginRequired
 		log.Println("[logout]: no cookie, login required")
 		return
 	}
 	//将cookie的maxage设置为-1
-	c.SetCookie("camp-session", "", -1, "/", ckdomain, false, true)
+	log.Println("[logout]: cookievalue: " + ck)
+	c.SetCookie("camp-session", "", -1, "/", "", false, false)
 }
 
 //登录后访问个人信息页可以查看自己的信息，包括用户ID、用户名称、用户昵称。
@@ -137,27 +146,43 @@ func (ctl AuthController) Logout(c *gin.Context) {
 //通过cookie查看
 func (ctl AuthController) WhoAmI(c *gin.Context) {
 	var user model.User
+	var resp vo.WhoAmIResponse
 	code := vo.OK
 
 	//response, ErrNo, user
 	defer func() {
 		log.Println("[WhoAmI] ErrNo:  ", code)
-		RoleID, _ := strconv.Atoi(user.RoleId)
-		c.JSON(http.StatusOK, vo.WhoAmIResponse{
-			Code: code,
-			Data: vo.TMember{
-				UserID:   strconv.FormatInt(user.Uuid, 10),
-				Nickname: user.NickName,
-				Username: user.UserName,
-				UserType: vo.UserType(RoleID),
-			},
-		})
+		if code == vo.OK {
+			RoleID, _ := strconv.Atoi(user.RoleId)
+			resp = vo.WhoAmIResponse{
+				Code: code,
+				Data: vo.TMember{
+					UserID:   strconv.FormatInt(user.Uuid, 10),
+					Nickname: user.NickName,
+					Username: user.UserName,
+					UserType: vo.UserType(RoleID),
+				},
+			}
+		} else {
+			resp = vo.WhoAmIResponse{
+				Code: code,
+				Data: vo.TMember{
+					UserID:   "",
+					Nickname: "",
+					Username: "",
+					UserType: 0,
+				},
+			}
+		}
+		c.JSON(http.StatusOK, resp)
+		utils.LogBody(resp, "WhoAmI.Resp")
 	}()
 
 	cookie, err := c.Cookie("camp-session")
 	//无cookie, 需要登录
 	if err != nil {
 		code = vo.LoginRequired
+		log.Println(err) //打印err
 		log.Println("[WhoAmI]: no cookie, loginrequired")
 		return
 	}
@@ -183,6 +208,7 @@ func (ctl AuthController) WhoAmI(c *gin.Context) {
 		//Redis错误
 		code = vo.UnknownError
 		log.Println("[WhoAmI]: Redis Error")
+		log.Println(err) //打印err
 		panic(err.Error())
 		return
 	} else {
@@ -194,6 +220,7 @@ func (ctl AuthController) WhoAmI(c *gin.Context) {
 			return
 		}
 
+		log.Println("[WhoAmI]: Cookie Value: " + cookie)
 		if user.Enabled == 0 {
 			code = vo.UserHasDeleted
 			log.Println("[WhoAmI]: USerHasDeleted")
