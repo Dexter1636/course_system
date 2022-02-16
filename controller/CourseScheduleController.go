@@ -3,6 +3,7 @@ package controller
 import (
 	"context"
 	"course_system/common"
+	"course_system/dto"
 	"course_system/model"
 	"course_system/vo"
 	"encoding/json"
@@ -228,9 +229,10 @@ func (ctl CourseScheduleController) Get(c *gin.Context) {
 	ans.Data.CourseList = make([]*vo.TCourse, result.RowsAffected)
 	for i := 0; i < int(result.RowsAffected); i++ {
 		ans.Data.CourseList[i] = new(vo.TCourse)
-		ans.Data.CourseList[i].CourseID = strconv.FormatInt(rows[i].Id, 10)
-		ans.Data.CourseList[i].Name = rows[i].Name
-		ans.Data.CourseList[i].TeacherID = strconv.FormatInt(rows[i].TeacherId, 10)
+		*(ans.Data.CourseList[i]) = dto.ToTCourse(rows[i])
+		//ans.Data.CourseList[i].CourseID = strconv.FormatInt(rows[i].Id, 10)
+		//ans.Data.CourseList[i].Name = rows[i].Name
+		//ans.Data.CourseList[i].TeacherID = strconv.FormatInt(rows[i].TeacherId, 10)
 	}
 	ans.Code = vo.OK
 	c.JSON(http.StatusOK, ans)
