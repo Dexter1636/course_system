@@ -28,12 +28,14 @@ func InitDb() {
 	username := viper.GetString("datasource.username")
 	password := viper.GetString("datasource.password")
 	charset := viper.GetString("datasource.charset")
-	loggerLevel := viper.GetString("logger.level")
+	//loggerLevel := viper.GetString("logger.level")
 	dsn := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?charset=%s&parseTime=true",
 		username, password, host, port, database, charset)
 	// config
 	config := &gorm.Config{}
-	if loggerLevel == "info" {
+	if env == "production" {
+		config.Logger = logger.New(fileLogger, logger.Config{LogLevel: logger.Info, Colorful: false})
+	} else {
 		config.Logger = logger.Default.LogMode(logger.Info)
 	}
 	// Get a database handle.
@@ -41,14 +43,22 @@ func InitDb() {
 	if err != nil {
 		panic("failed to connect to database, err: " + err.Error())
 	}
+	// set connection pool size
+	sqlDB, err := db.DB()
+	if err != nil {
+		panic("failed to config db connection pool, err: " + err.Error())
+	}
+	sqlDB.SetMaxOpenConns(150)
 	DB = db
 	fmt.Println("Connected to database.")
-
+	
+	// @Author 彭守恒 2022-02-15 02:45 删除以避免循环依赖
+	// data.CheckAdmin()
 	var u model.User
 	if err := DB.Where("user_name = ?", "JudgeAdmin").Take(&u).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			DB.Exec("INSERT INTO user(user_name, nick_name, password, role_id, enabled) " +
-				"VALUES ('JudgeAdmin', 'JudgeAdmin', 'JudgePassword2022', '1', 1)")
+			GetDB().Exec("INSERT INTO user(uuid, user_name, nick_name, password, role_id, enabled) " +
+				"VALUES (1, 'JudgeAdmin', 'JudgeAdmin', 'JudgePassword2022', '1', 1)")
 		}
 	}
 }

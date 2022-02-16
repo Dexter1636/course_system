@@ -4,6 +4,7 @@ import (
 	"course_system/dto"
 	"course_system/model"
 	"course_system/repository"
+	"course_system/utils"
 	"course_system/vo"
 	"github.com/gin-gonic/gin"
 	"net/http"
@@ -16,56 +17,78 @@ type ICourseCommonController interface {
 }
 
 type CourseCommonController struct {
-	repo repository.ICourseRepository
+	repo            repository.ICourseRepository
+	courseRedisRepo repository.ICourseRedisRepository
 }
 
 func NewCourseCommonController() ICourseCommonController {
-	return CourseCommonController{repo: repository.NewCourseRepository()}
+	return CourseCommonController{
+		repo:            repository.NewCourseRepository(),
+		courseRedisRepo: repository.NewCourseRedisRepository(),
+	}
 }
 
 func (ctl CourseCommonController) CreateCourse(c *gin.Context) {
 	var req vo.CreateCourseRequest
+	var resp vo.CreateCourseResponse
+	var course model.Course
+	var code vo.ErrNo
+
+	// response
+	defer func() {
+		resp = vo.CreateCourseResponse{
+			Code: code,
+			Data: struct {
+				CourseID string
+			}{CourseID: strconv.FormatInt(course.Id, 10)},
+		}
+		c.JSON(http.StatusOK, resp)
+		utils.LogReqRespBody(req, resp, "CreateCourse")
+	}()
 
 	// validate data
 	if err := c.ShouldBindJSON(&req); err != nil {
-		panic(err.Error())
+		code = vo.ParamInvalid
+		return
 	}
 
-	// create course
-	course := model.Course{
+	// log request body
+	utils.LogBody(req, "CreateCourse.req")
+
+	// course instance
+	course = model.Course{
 		Name:  req.Name,
 		Cap:   req.Cap,
 		Avail: req.Cap,
 	}
 
-	code := ctl.repo.CreateCourse(&course)
+	// create course in MySQL
+	code = ctl.repo.CreateCourse(&course)
 
-	// response
-	c.JSON(http.StatusOK, vo.CreateCourseResponse{
-		Code: code,
-		Data: struct {
-			CourseID string
-		}{CourseID: strconv.FormatInt(course.Id, 10)},
-	})
-
+	// create course in Redis
+	code = ctl.courseRedisRepo.CreateCourse(&course)
 }
 
 func (ctl CourseCommonController) GetCourse(c *gin.Context) {
 	var req vo.GetCourseRequest
+	var resp vo.GetCourseResponse
 	var code vo.ErrNo
 	var course model.Course
 
 	// response
 	defer func() {
-		c.JSON(http.StatusOK, vo.GetCourseResponse{
+		resp = vo.GetCourseResponse{
 			Code: code,
 			Data: dto.ToTCourse(course),
-		})
+		}
+		c.JSON(http.StatusOK, resp)
+		utils.LogReqRespBody(req, resp, "GetCourse")
 	}()
 
 	// validate data
-	if err := c.ShouldBindJSON(&req); err != nil {
-		panic(err.Error())
+	if err := c.ShouldBindQuery(&req); err != nil {
+		code = vo.ParamInvalid
+		return
 	}
 	courseId, err := strconv.ParseInt(req.CourseID, 10, 64)
 	if err != nil {
@@ -73,5 +96,5 @@ func (ctl CourseCommonController) GetCourse(c *gin.Context) {
 	}
 
 	// get course
-	code = ctl.repo.GetCourseById(courseId, &course)
+	code = ctl.courseRedisRepo.GetCourseById(courseId, &course)
 }

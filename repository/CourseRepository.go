@@ -77,7 +77,7 @@ func (cr CourseRepository) GetCourseListByStudentId(stuId int64, courseList *[]m
 }
 
 func (cr CourseRepository) CreateCourse(course *model.Course) (code vo.ErrNo) {
-	if err := cr.DB.Create(&course).Error; err != nil {
+	if err := cr.DB.Omit("Id", "TeacherId").Create(&course).Error; err != nil {
 		panic(err.Error())
 	}
 	return vo.OK

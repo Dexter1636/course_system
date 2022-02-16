@@ -2,6 +2,9 @@ package data
 
 import (
 	"course_system/common"
+	"course_system/model"
+	"errors"
+	"gorm.io/gorm"
 )
 
 func InitAdmin() {
@@ -9,6 +12,14 @@ func InitAdmin() {
 		"VALUES (1, 'JudgeAdmin', 'JudgeAdmin', 'JudgePassword2022', '1', 1)")
 }
 
+func CheckAdmin() {
+	var u model.User
+	if err := common.DB.Where("user_name = ?", "JudgeAdmin").Take(&u).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			InitAdmin()
+		}
+	}
+}
 func InitDataForUser() {
 	//insert students
 	InitAdmin()
