@@ -233,12 +233,16 @@ func (ctl UserController) List(c *gin.Context) {
 	code := vo.OK
 
 	defer func() {
+		//防止返回NULL
+		if len(MemberList) == 0 {
+			MemberList = make([]vo.TMember, 0)
+		}
 		resp := vo.GetMemberListResponse{
 			Code: code,
 			Data: struct{ MemberList []vo.TMember }{MemberList: MemberList},
 		}
 		c.JSON(http.StatusOK, resp)
-		utils.LogReqRespBody(req, resp, "ListMember")
+		utils.LogReqRespBody(req, fmt.Sprintf("MemberList len: %d", len(MemberList)), "List")
 	}()
 
 	//读取数据
@@ -288,11 +292,6 @@ func (ctl UserController) List(c *gin.Context) {
 			UserID: strconv.FormatInt(users[i].Uuid, 10), Nickname: users[i].NickName, Username: users[i].UserName, UserType: vo.UserType(UserType)})
 	}
 
-	//防止返回NULL
-	if len(MemberList) == 0 {
-		MemberList = make([]vo.TMember, 0)
-	}
-
 	//返回参数
 	log.Println("List:查询成功，Code=0")
 }
@@ -306,7 +305,7 @@ func (ctl UserController) Update(c *gin.Context) {
 			Code: code,
 		}
 		c.JSON(http.StatusOK, resp)
-		utils.LogReqRespBody(req, resp, "UpdateMember")
+		utils.LogReqRespBody(req, resp, "Update")
 	}()
 
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -378,7 +377,6 @@ func (ctl UserController) Update(c *gin.Context) {
 			return
 		}
 
-		c.JSON(http.StatusOK, vo.UpdateMemberResponse{Code: vo.OK})
 		log.Println("Update:修改成功，Code=0")
 	}
 }
@@ -392,7 +390,7 @@ func (ctl UserController) Delete(c *gin.Context) {
 			Code: code,
 		}
 		c.JSON(http.StatusOK, resp)
-		utils.LogReqRespBody(req, resp, "DeleteMember")
+		utils.LogReqRespBody(req, resp, "Delete")
 	}()
 
 	if err := c.ShouldBindJSON(&req); err != nil {
