@@ -1,6 +1,6 @@
 # Course System
 
-This is the project for ByteCamp 2022 Winter, developed with :heart: by `Group 28`.
+This is the project for ByteCamp 2022 Winter, developed by `Group 28` with :heart:.
 
 ## Quick Start
 
@@ -55,7 +55,7 @@ This is the project for ByteCamp 2022 Winter, developed with :heart: by `Group 2
 
 ## Note
 
-1. Remember to use your own branch for development.
+1. Remember to use your own branch for your development.
     
     Do this before coding:
     

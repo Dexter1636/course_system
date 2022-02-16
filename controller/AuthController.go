@@ -11,12 +11,16 @@ import (
 	"fmt"
 	"github.com/gin-gonic/gin"
 	"github.com/go-redis/redis/v8"
+	"github.com/gorilla/securecookie"
+	"github.com/gorilla/sessions"
 	"gorm.io/gorm"
 	"log"
 	"net/http"
 	"regexp"
 	"strconv"
 )
+
+var Store = sessions.NewCookieStore(securecookie.GenerateRandomKey(32))
 
 type IAuthController interface {
 	Login(c *gin.Context)
@@ -112,7 +116,18 @@ func (ctl AuthController) Login(c *gin.Context) {
 	}
 
 	//设置cookie，存储uuid
-	c.SetCookie("camp-session", strconv.FormatInt(user.Uuid, 10), 0, "/", "", false, false)
+	//c.SetCookie("camp-session", strconv.FormatInt(user.Uuid, 10), 0, "/", "", false, false)
+	session, _ := Store.Get(c.Request, "camp-seesion")
+	session.Options.MaxAge = 3600 * 24 * 7
+	// 存储string,方便后面查redis
+	session.Values["UserID"] = strconv.FormatInt(user.Uuid, 10)
+	session.Values["UserType"] = user.RoleId
+	err := session.Save(c.Request, c.Writer)
+	if err != nil {
+		code = vo.UnknownError
+		log.Println("[login]: session save wrong")
+		return
+	}
 	log.Println("[login]:successfully login, uuid:" + strconv.FormatInt(user.Uuid, 10))
 }
 
@@ -129,16 +144,33 @@ func (ctl AuthController) Logout(c *gin.Context) {
 		})
 	}()
 
-	//无cookie, 需要登录
-	ck, err := c.Cookie("camp-session")
-	if err != nil {
+	////无cookie, 需要登录
+	//ck, err := c.Cookie("camp-session")
+	//if err != nil {
+	//	code = vo.LoginRequired
+	//	log.Println("[logout]: no cookie, login required")
+	//	return
+	//}
+	////将cookie的maxage设置为-1
+	//log.Println("[logout]: cookievalue: " + ck)
+	//c.SetCookie("camp-session", "", -1, "/", "", false, false)
+
+	session, err := Store.Get(c.Request, "camp-seesion")
+	if session.IsNew || err != nil {
 		code = vo.LoginRequired
-		log.Println("[logout]: no cookie, login required")
+		log.Println("[logout]: session wrong")
 		return
 	}
-	//将cookie的maxage设置为-1
-	log.Println("[logout]: cookievalue: " + ck)
-	c.SetCookie("camp-session", "", -1, "/", "", false, false)
+
+	//删除cookie
+	session.Options.MaxAge = -1
+	err = session.Save(c.Request, c.Writer)
+	if err != nil {
+		code = vo.UnknownError
+		log.Println("[logout]: session delete wrong")
+		return
+	}
+
 }
 
 //登录后访问个人信息页可以查看自己的信息，包括用户ID、用户名称、用户昵称。
@@ -178,14 +210,22 @@ func (ctl AuthController) WhoAmI(c *gin.Context) {
 		utils.LogBody(resp, "WhoAmI.Resp")
 	}()
 
-	cookie, err := c.Cookie("camp-session")
-	//无cookie, 需要登录
-	if err != nil {
+	//cookie, err := c.Cookie("camp-session")
+	////无cookie, 需要登录
+	//if err != nil {
+	//	code = vo.LoginRequired
+	//	log.Println(err) //打印err
+	//	log.Println("[WhoAmI]: no cookie, loginrequired")
+	//	return
+	//}
+	session, err := Store.Get(c.Request, "camp-seesion")
+	if session.IsNew || err != nil {
 		code = vo.LoginRequired
-		log.Println(err) //打印err
-		log.Println("[WhoAmI]: no cookie, loginrequired")
+		log.Println("[WhoAmI] : no session, ")
 		return
 	}
+
+	cookie := session.Values["UserID"].(string)
 	//有cookie, 根据存的Uuid获取信息
 	//uuidT, err := strconv.ParseInt(cookie, 10, 64)
 	//if err := ctl.DB.Where("uuid = ?", uuidT).Take(&user).Error; err != nil {
