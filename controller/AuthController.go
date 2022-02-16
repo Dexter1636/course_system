@@ -24,10 +24,6 @@ type IAuthController interface {
 	WhoAmI(c *gin.Context)
 }
 
-//方便修改cooki域名
-//var ckdomain string = "0.0.0.0"
-var ckdomain string = "180.184.74.137"
-
 type AuthController struct {
 	DB  *gorm.DB
 	RDB *redis.Client
@@ -53,11 +49,20 @@ func (ctl AuthController) Login(c *gin.Context) {
 
 	//response, ErrNo, UserID
 	defer func() {
-		resp = vo.LoginResponse{
-			Code: code,
-			Data: struct {
-				UserID string
-			}{strconv.FormatInt(user.Uuid, 10)},
+		if code == vo.OK {
+			resp = vo.LoginResponse{
+				Code: code,
+				Data: struct {
+					UserID string
+				}{strconv.FormatInt(user.Uuid, 10)},
+			}
+		} else {
+			resp = vo.LoginResponse{
+				Code: code,
+				Data: struct {
+					UserID string
+				}{""},
+			}
 		}
 		c.JSON(http.StatusOK, resp)
 		utils.LogReqRespBody(req, resp, "Login")
@@ -107,7 +112,7 @@ func (ctl AuthController) Login(c *gin.Context) {
 	}
 
 	//设置cookie，存储uuid
-	c.SetCookie("camp-session", strconv.FormatInt(user.Uuid, 10), 0, "/", ckdomain, false, true)
+	c.SetCookie("camp-session", strconv.FormatInt(user.Uuid, 10), 0, "/", "", false, true)
 	log.Println("[login]:successfully login, uuid:" + strconv.FormatInt(user.Uuid, 10))
 }
 
@@ -133,7 +138,7 @@ func (ctl AuthController) Logout(c *gin.Context) {
 	}
 	//将cookie的maxage设置为-1
 	log.Println("[logout]: cookievalue: " + ck)
-	c.SetCookie("camp-session", "", -1, "/", ckdomain, false, true)
+	c.SetCookie("camp-session", "", -1, "/", "", false, true)
 }
 
 //登录后访问个人信息页可以查看自己的信息，包括用户ID、用户名称、用户昵称。
@@ -147,15 +152,27 @@ func (ctl AuthController) WhoAmI(c *gin.Context) {
 	//response, ErrNo, user
 	defer func() {
 		log.Println("[WhoAmI] ErrNo:  ", code)
-		RoleID, _ := strconv.Atoi(user.RoleId)
-		resp = vo.WhoAmIResponse{
-			Code: code,
-			Data: vo.TMember{
-				UserID:   strconv.FormatInt(user.Uuid, 10),
-				Nickname: user.NickName,
-				Username: user.UserName,
-				UserType: vo.UserType(RoleID),
-			},
+		if code == vo.OK {
+			RoleID, _ := strconv.Atoi(user.RoleId)
+			resp = vo.WhoAmIResponse{
+				Code: code,
+				Data: vo.TMember{
+					UserID:   strconv.FormatInt(user.Uuid, 10),
+					Nickname: user.NickName,
+					Username: user.UserName,
+					UserType: vo.UserType(RoleID),
+				},
+			}
+		} else {
+			resp = vo.WhoAmIResponse{
+				Code: code,
+				Data: vo.TMember{
+					UserID:   "",
+					Nickname: "",
+					Username: "",
+					UserType: 0,
+				},
+			}
 		}
 		c.JSON(http.StatusOK, resp)
 		utils.LogBody(resp, "WhoAmI.Resp")
