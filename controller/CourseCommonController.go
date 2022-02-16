@@ -4,6 +4,7 @@ import (
 	"course_system/dto"
 	"course_system/model"
 	"course_system/repository"
+	"course_system/utils"
 	"course_system/vo"
 	"github.com/gin-gonic/gin"
 	"log"
@@ -49,6 +50,9 @@ func (ctl CourseCommonController) CreateCourse(c *gin.Context) {
 		code = vo.ParamInvalid
 		return
 	}
+
+	// log request body
+	utils.LogReqBody(req, "CreateCourse.req")
 
 	// course instance
 	course = model.Course{
