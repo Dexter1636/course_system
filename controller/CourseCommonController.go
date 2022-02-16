@@ -7,7 +7,6 @@ import (
 	"course_system/utils"
 	"course_system/vo"
 	"github.com/gin-gonic/gin"
-	"log"
 	"net/http"
 	"strconv"
 )
@@ -31,18 +30,20 @@ func NewCourseCommonController() ICourseCommonController {
 
 func (ctl CourseCommonController) CreateCourse(c *gin.Context) {
 	var req vo.CreateCourseRequest
+	var resp vo.CreateCourseResponse
 	var course model.Course
 	var code vo.ErrNo
 
 	// response
 	defer func() {
-		c.JSON(http.StatusOK, vo.CreateCourseResponse{
+		resp = vo.CreateCourseResponse{
 			Code: code,
 			Data: struct {
 				CourseID string
 			}{CourseID: strconv.FormatInt(course.Id, 10)},
-		})
-		log.Printf("[CreateCourse] code: %d\n", code)
+		}
+		c.JSON(http.StatusOK, resp)
+		utils.LogReqRespBody(req, resp, "CreateCourse")
 	}()
 
 	// validate data
@@ -70,16 +71,18 @@ func (ctl CourseCommonController) CreateCourse(c *gin.Context) {
 
 func (ctl CourseCommonController) GetCourse(c *gin.Context) {
 	var req vo.GetCourseRequest
+	var resp vo.GetCourseResponse
 	var code vo.ErrNo
 	var course model.Course
 
 	// response
 	defer func() {
-		c.JSON(http.StatusOK, vo.GetCourseResponse{
+		resp = vo.GetCourseResponse{
 			Code: code,
 			Data: dto.ToTCourse(course),
-		})
-		log.Printf("[GetCourse] code: %d\n", code)
+		}
+		c.JSON(http.StatusOK, resp)
+		utils.LogReqRespBody(req, resp, "GetCourse")
 	}()
 
 	// validate data
