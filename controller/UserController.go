@@ -59,13 +59,21 @@ func (ctl UserController) Create(c *gin.Context) {
 
 	//权限检查
 	//获取cookie
-	cookie, err := c.Cookie("camp-session")
-	if err != nil {
+	//cookie, err := c.Cookie("camp-session")
+	//if err != nil {
+	//	code = vo.LoginRequired
+	//	log.Println("CreateMember:Login Required")
+	//	log.Println(err)
+	//	return
+	//}
+	//获取session
+	session, err := Store.Get(c.Request, "camp-seesion")
+	if session.IsNew || err != nil {
 		code = vo.LoginRequired
-		log.Println("CreateMember:Login Required")
-		log.Println(err)
+		log.Println("[WhoAmI] : no session, ")
 		return
 	}
+	cookie := session.Values["UserID"].(string)
 	uuidT, err := strconv.ParseInt(cookie, 10, 64)
 	//redis检查usertype
 	val, err := ctl.RDB.Get(ctl.Ctx, fmt.Sprintf("user:%s", strconv.FormatInt(uuidT, 10))).Result()
