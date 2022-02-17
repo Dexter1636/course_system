@@ -51,6 +51,9 @@ func (ctl CourseCommonController) CreateCourse(c *gin.Context) {
 		code = vo.ParamInvalid
 		return
 	}
+	if code = vo.ValidateCreateCourseReq(req); code != vo.OK {
+		return
+	}
 
 	// log request body
 	utils.LogBody(req, "CreateCourse.req")
@@ -90,10 +93,11 @@ func (ctl CourseCommonController) GetCourse(c *gin.Context) {
 		code = vo.ParamInvalid
 		return
 	}
-	courseId, err := strconv.ParseInt(req.CourseID, 10, 64)
-	if err != nil {
-		code = vo.ParamInvalid
+	if code = vo.ValidateGetCourseReq(req); code != vo.OK {
+		return
 	}
+
+	courseId, _ := strconv.ParseInt(req.CourseID, 10, 64)
 
 	// get course
 	code = ctl.courseRedisRepo.GetCourseById(courseId, &course)

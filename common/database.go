@@ -11,6 +11,8 @@ import (
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
+	"log"
+	"time"
 )
 
 var DB *gorm.DB
@@ -46,10 +48,10 @@ func InitDb() {
 	if err != nil {
 		panic("failed to config db connection pool, err: " + err.Error())
 	}
-	sqlDB.SetMaxOpenConns(150)
+	sqlDB.SetMaxOpenConns(190)
 	DB = db
 	fmt.Println("Connected to database.")
-	
+
 	// @Author 彭守恒 2022-02-15 02:45 删除以避免循环依赖
 	// data.CheckAdmin()
 	var u model.User
@@ -57,6 +59,47 @@ func InitDb() {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			GetDB().Exec("INSERT INTO user(uuid, user_name, nick_name, password, role_id, enabled) " +
 				"VALUES (1, 'JudgeAdmin', 'JudgeAdmin', 'JudgePassword2022', '1', 1)")
+		}
+	}
+}
+
+func MessageQueue() {
+	for {
+		count, err := RDB.LLen(Ctx, "MessageQueue").Result()
+		if err != nil {
+			log.Println(err.Error())
+		}
+		if count > 0 {
+			val, err := RDB.LPop(Ctx, "MessageQueue").Result()
+			if err != nil {
+				log.Println(err.Error())
+			}
+			var sc model.Sc
+			if err = json.Unmarshal([]byte(val), &sc); err != nil {
+				log.Println(err.Error())
+			}
+			err = DB.Transaction(func(tx *gorm.DB) error {
+				// check avail
+				course := model.Course{Id: sc.CourseId}
+				if err := tx.Select("avail").Take(&course, sc.CourseId).Error; err != nil {
+					return err
+				}
+				// update avail
+				course.Avail--
+				if err := tx.Model(&course).Update("avail", course.Avail).Error; err != nil {
+					return err
+				}
+				// create sc record
+				if err := tx.Create(&sc).Error; err != nil {
+					return err
+				}
+				return nil
+			})
+			if err != nil {
+				log.Println(err.Error())
+			}
+		} else {
+			time.Sleep(1 * time.Second)
 		}
 	}
 }
@@ -100,11 +143,13 @@ func InitRedisData() {
 		panic(err.Error())
 	}
 	for _, sc := range scs {
-		err := RDB.SAdd(Ctx, fmt.Sprintf("sc:%d", sc.StudentId), sc.CourseId, 0).Err()
+		err := RDB.SAdd(Ctx, fmt.Sprintf("sc:%d", sc.StudentId), sc.CourseId).Err()
 		if err != nil {
 			panic(err.Error())
 		}
 	}
+	//初始化消息队列
+	go MessageQueue()
 }
 
 func InitRdb(ctx context.Context) {

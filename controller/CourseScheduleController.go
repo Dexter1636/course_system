@@ -91,7 +91,7 @@ func (ctl CourseScheduleController) Bind(c *gin.Context) {
 	if err5 != nil {
 		log.Println("Bind Case 7")
 		c.JSON(http.StatusOK, vo.BindCourseResponse{Code: vo.UnknownError})
-		panic(err5.Error())
+		//panic(err5.Error())
 		return
 	}
 	//存入mysql
@@ -172,14 +172,14 @@ func (ctl CourseScheduleController) Unbind(c *gin.Context) {
 	if err != nil {
 		log.Println("UnBind Case 8")
 		c.JSON(http.StatusOK, vo.UnbindCourseResponse{Code: vo.UnknownError})
-		panic(err.Error())
+		//panic(err.Error())
 		return
 	}
 	//存入mysql
 	if err := ctl.DB.Model(&model.Course{}).First(&sample, number).Update("TeacherId", 0).Error; err != nil {
 		log.Println("UnBind Case 9")
 		c.JSON(http.StatusOK, vo.UnbindCourseResponse{Code: vo.UnknownError})
-		panic(err.Error())
+		//panic(err.Error())
 		return
 	}
 	c.JSON(http.StatusOK, vo.UnbindCourseResponse{Code: vo.OK})

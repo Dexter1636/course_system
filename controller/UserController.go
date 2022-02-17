@@ -52,54 +52,72 @@ func (ctl UserController) Create(c *gin.Context) {
 
 	if err := c.ShouldBindJSON(&req); err != nil {
 		code = vo.UnknownError
-		panic(err.Error())
+		//panic(err.Error())
 		log.Println("CreateMember:ShouldBindJSON error")
 		return
 	}
 
 	//权限检查
 	//获取cookie
-	cookie, err := c.Cookie("camp-session")
-	if err != nil {
+	//cookie, err := c.Cookie("camp-session")
+	//if err != nil {
+	//	code = vo.LoginRequired
+	//	log.Println("CreateMember:Login Required")
+	//	log.Println(err)
+	//	return
+	//}
+	//获取session
+	session, err := Store.Get(c.Request, "camp-session")
+	if session.IsNew || err != nil {
 		code = vo.LoginRequired
-		log.Println("CreateMember:Login Required")
+		log.Println("[CreateMember] : no session, 出错了，这里查不到session")
 		log.Println(err)
 		return
-	}
-	uuidT, err := strconv.ParseInt(cookie, 10, 64)
-	//redis检查usertype
-	val, err := ctl.RDB.Get(ctl.Ctx, fmt.Sprintf("user:%s", strconv.FormatInt(uuidT, 10))).Result()
-	if err == redis.Nil {
-		//用户不存在
-		code = vo.UserNotExisted
-		log.Println("CreateMember:UserNotExisted while login check")
-		return
-	} else if err != nil {
-		//Redis错误
-		code = vo.UnknownError
-		log.Println("CreateMember:redis-error while login check")
-		panic(err.Error())
-		return
 	} else {
-		var user model.User
-		if err := json.Unmarshal([]byte(val), &user); err != nil {
-			//JSON解析错误
-			code = vo.UnknownError
-			log.Println("CreateMember:json-error while login check")
-			panic(err.Error())
-			return
-		}
-		if user.Enabled == 0 {
-			code = vo.UserHasDeleted
-			log.Println("CreateMember:UserHasDeleted")
-			return
-		}
-		if user.RoleId != "1" {
+		cookie := session.Values["UserType"].(string)
+		uuidT, err := strconv.ParseInt(cookie, 10, 64)
+		if uuidT != 1 {
 			code = vo.PermDenied
-			log.Println("CreateMember:PermDenied cause user not admin")
+			log.Println("CreateMember:PermDenied cause user not admin，非管理员的session")
+			log.Println(err)
 			return
 		}
 	}
+
+	//redis检查usertype
+	//val, err := ctl.RDB.Get(ctl.Ctx, fmt.Sprintf("user:%s", strconv.FormatInt(uuidT, 10))).Result()
+	//if err == redis.Nil {
+	//	//用户不存在
+	//	code = vo.UserNotExisted
+	//	log.Println("CreateMember:UserNotExisted while login check")
+	//	return
+	//} else if err != nil {
+	//	//Redis错误
+	//	code = vo.UnknownError
+	//	log.Println("CreateMember:redis-error while login check")
+	//	//panic(err.Error())
+	//	return
+	//} else {
+	//	var userTmp model.UserTmp
+	//	if err := json.Unmarshal([]byte(val), &userTmp); err != nil {
+	//		//JSON解析错误
+	//		code = vo.UnknownError
+	//		log.Println("CreateMember:json-error while login check")
+	//		log.Println(err)
+	//		//panic(err.Error())
+	//		return
+	//	}
+	//	if user.Enabled == 0 {
+	//		code = vo.UserHasDeleted
+	//		log.Println("CreateMember:UserHasDeleted While LoginCheck")
+	//		return
+	//	}
+	//	if userTmp.RoleId != "1" {
+	//		code = vo.PermDenied
+	//		log.Println("CreateMember:PermDenied cause user not admin")
+	//		return
+	//	}
+	//}
 
 	//if err := ctl.DB.Where("uuid = ?", uuidT).Take(&user).Error; err != nil {
 	//	if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -147,14 +165,14 @@ func (ctl UserController) Create(c *gin.Context) {
 				//JSON解析错误
 				code = vo.UnknownError
 				log.Println("CreateMember:JSON-error while creating")
-				panic(err.Error())
+				//panic(err.Error())
 				return
 			}
 			//存入redis
 			err = ctl.RDB.Set(ctl.Ctx, fmt.Sprintf("user:%d", user.Uuid), val, 0).Err()
 			if err != nil {
 				code = vo.UnknownError
-				panic(err.Error())
+				//panic(err.Error())
 				log.Println("CreateMember:redis-error while creating")
 				return
 			}
@@ -162,7 +180,7 @@ func (ctl UserController) Create(c *gin.Context) {
 			return
 		} else {
 			code = vo.UnknownError
-			panic(err.Error())
+			//panic(err.Error())
 			log.Println("CreateMember:Unknown-error while creating")
 			return
 		}
@@ -204,13 +222,13 @@ func (ctl UserController) Member(c *gin.Context) {
 		//Redis错误
 		code = vo.UnknownError
 		log.Println("Member:redis-error")
-		panic(err.Error())
+		//panic(err.Error())
 		return
 	} else {
 		if err := json.Unmarshal([]byte(val), &user); err != nil {
 			//JSON解析错误
 			code = vo.UnknownError
-			panic(err.Error())
+			//panic(err.Error())
 			log.Println("Member:JSON-error")
 			return
 		}
@@ -233,12 +251,16 @@ func (ctl UserController) List(c *gin.Context) {
 	code := vo.OK
 
 	defer func() {
+		//防止返回NULL
+		if len(MemberList) == 0 {
+			MemberList = make([]vo.TMember, 0)
+		}
 		resp := vo.GetMemberListResponse{
 			Code: code,
 			Data: struct{ MemberList []vo.TMember }{MemberList: MemberList},
 		}
 		c.JSON(http.StatusOK, resp)
-		utils.LogReqRespBody(req, resp, "ListMember")
+		utils.LogReqRespBody(req, fmt.Sprintf("MemberList len: %d", len(MemberList)), "List")
 	}()
 
 	//读取数据
@@ -288,11 +310,6 @@ func (ctl UserController) List(c *gin.Context) {
 			UserID: strconv.FormatInt(users[i].Uuid, 10), Nickname: users[i].NickName, Username: users[i].UserName, UserType: vo.UserType(UserType)})
 	}
 
-	//防止返回NULL
-	if len(MemberList) == 0 {
-		MemberList = make([]vo.TMember, 0)
-	}
-
 	//返回参数
 	log.Println("List:查询成功，Code=0")
 }
@@ -306,7 +323,7 @@ func (ctl UserController) Update(c *gin.Context) {
 			Code: code,
 		}
 		c.JSON(http.StatusOK, resp)
-		utils.LogReqRespBody(req, resp, "UpdateMember")
+		utils.LogReqRespBody(req, resp, "Update")
 	}()
 
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -378,7 +395,6 @@ func (ctl UserController) Update(c *gin.Context) {
 			return
 		}
 
-		c.JSON(http.StatusOK, vo.UpdateMemberResponse{Code: vo.OK})
 		log.Println("Update:修改成功，Code=0")
 	}
 }
@@ -392,7 +408,7 @@ func (ctl UserController) Delete(c *gin.Context) {
 			Code: code,
 		}
 		c.JSON(http.StatusOK, resp)
-		utils.LogReqRespBody(req, resp, "DeleteMember")
+		utils.LogReqRespBody(req, resp, "Delete")
 	}()
 
 	if err := c.ShouldBindJSON(&req); err != nil {
