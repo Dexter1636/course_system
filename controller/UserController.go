@@ -74,42 +74,48 @@ func (ctl UserController) Create(c *gin.Context) {
 		log.Println(err)
 		return
 	}
-	cookie := session.Values["UserID"].(string)
+	cookie := session.Values["UserType"].(string)
 	uuidT, err := strconv.ParseInt(cookie, 10, 64)
-	//redis检查usertype
-	val, err := ctl.RDB.Get(ctl.Ctx, fmt.Sprintf("user:%s", strconv.FormatInt(uuidT, 10))).Result()
-	if err == redis.Nil {
-		//用户不存在
-		code = vo.UserNotExisted
-		log.Println("CreateMember:UserNotExisted while login check")
+	if uuidT != 1 {
+		code = vo.PermDenied
+		log.Println("CreateMember:PermDenied cause user not admin")
 		return
-	} else if err != nil {
-		//Redis错误
-		code = vo.UnknownError
-		log.Println("CreateMember:redis-error while login check")
-		//panic(err.Error())
-		return
-	} else {
-		var userTmp model.UserTmp
-		if err := json.Unmarshal([]byte(val), &userTmp); err != nil {
-			//JSON解析错误
-			code = vo.UnknownError
-			log.Println("CreateMember:json-error while login check")
-			log.Println(err)
-			//panic(err.Error())
-			return
-		}
-		if user.Enabled == 0 {
-			code = vo.UserHasDeleted
-			log.Println("CreateMember:UserHasDeleted")
-			return
-		}
-		if userTmp.RoleId != "1" {
-			code = vo.PermDenied
-			log.Println("CreateMember:PermDenied cause user not admin")
-			return
-		}
 	}
+
+	//redis检查usertype
+	//val, err := ctl.RDB.Get(ctl.Ctx, fmt.Sprintf("user:%s", strconv.FormatInt(uuidT, 10))).Result()
+	//if err == redis.Nil {
+	//	//用户不存在
+	//	code = vo.UserNotExisted
+	//	log.Println("CreateMember:UserNotExisted while login check")
+	//	return
+	//} else if err != nil {
+	//	//Redis错误
+	//	code = vo.UnknownError
+	//	log.Println("CreateMember:redis-error while login check")
+	//	//panic(err.Error())
+	//	return
+	//} else {
+	//	var userTmp model.UserTmp
+	//	if err := json.Unmarshal([]byte(val), &userTmp); err != nil {
+	//		//JSON解析错误
+	//		code = vo.UnknownError
+	//		log.Println("CreateMember:json-error while login check")
+	//		log.Println(err)
+	//		//panic(err.Error())
+	//		return
+	//	}
+	//	if user.Enabled == 0 {
+	//		code = vo.UserHasDeleted
+	//		log.Println("CreateMember:UserHasDeleted While LoginCheck")
+	//		return
+	//	}
+	//	if userTmp.RoleId != "1" {
+	//		code = vo.PermDenied
+	//		log.Println("CreateMember:PermDenied cause user not admin")
+	//		return
+	//	}
+	//}
 
 	//if err := ctl.DB.Where("uuid = ?", uuidT).Take(&user).Error; err != nil {
 	//	if errors.Is(err, gorm.ErrRecordNotFound) {
