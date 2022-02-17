@@ -61,18 +61,13 @@ func (ctl CourseBookingController) BookCourse(c *gin.Context) {
 		code = vo.ParamInvalid
 		return
 	}
+	if code = vo.ValidateBookCourseReq(req); code != vo.OK {
+		return
+	}
 
-	// validate data
-	studentId, err := strconv.ParseInt(req.StudentID, 10, 64)
-	if err != nil {
-		code = vo.ParamInvalid
-		return
-	}
-	courseId, err := strconv.ParseInt(req.CourseID, 10, 64)
-	if err != nil {
-		code = vo.ParamInvalid
-		return
-	}
+	studentId, _ := strconv.ParseInt(req.StudentID, 10, 64)
+
+	courseId, _ := strconv.ParseInt(req.CourseID, 10, 64)
 
 	// =============================================================
 	// book course (v2: cache "course", "sc" and "student" to Redis)
@@ -224,11 +219,11 @@ func (ctl CourseBookingController) GetStudentCourse(c *gin.Context) {
 		code = vo.ParamInvalid
 		return
 	}
-	studentId, err := strconv.ParseInt(req.StudentID, 10, 64)
-	if err != nil {
-		code = vo.ParamInvalid
+	if code = vo.ValidateGetStudentCourseReq(req); code != vo.OK {
 		return
 	}
+
+	studentId, _ := strconv.ParseInt(req.StudentID, 10, 64)
 
 	// get course
 	code = ctl.courseRedisRepo.GetCourseListByStudentId(studentId, &courseList)
