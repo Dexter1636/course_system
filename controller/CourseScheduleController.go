@@ -156,7 +156,7 @@ func (ctl CourseScheduleController) Unbind(c *gin.Context) {
 	}
 	if sample.TeacherId != number2 {
 		log.Println("UnBind Case 6")
-		c.JSON(http.StatusOK, vo.UnbindCourseResponse{Code: vo.UserNotExisted})
+		c.JSON(http.StatusOK, vo.UnbindCourseResponse{Code: vo.CourseNotBind})
 		return
 	}
 	sample.TeacherId = 0
@@ -334,9 +334,10 @@ func (ctl CourseScheduleController) Schedule(c *gin.Context) {
 	var ans vo.ScheduleCourseResponse
 	ans.Data = make(map[string]string)
 	ans.Code = vo.OK
-
+	var counter int = 0
 	for i := 1; i <= n; i++ {
 		if match[i] != 0 {
+			counter++
 			ans.Data[tid[i]] = cid[match[i]-n]
 		}
 	}
