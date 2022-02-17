@@ -119,12 +119,12 @@ func (crr CourseRedisRepository) GetCourseListByStudentId(stuId int64, courseLis
 		`)
 	val, err := lua.Run(crr.ctx, crr.RDB, keys, nil).Slice()
 	if err != nil {
-		log.Println(err.Error())
+		log.Println("[GetCourseListByStudentId] lua err:", err.Error())
 	}
-	log.Println(val)
+	log.Println("[GetCourseListByStudentId] lua val:", val)
 
 	// convert val[0] to ErrNo
-	log.Println(val[0])
+	log.Println("[GetCourseListByStudentId] lua val[0]:", val[0])
 	resCode, ok := val[0].(int64)
 	if !ok {
 		log.Printf("Error when converting lua result to ErrNo in GetCourseListByStudentId")
@@ -144,7 +144,7 @@ func (crr CourseRedisRepository) GetCourseListByStudentId(stuId int64, courseLis
 		courseJsonList := make([]string, 8)
 		err := json.Unmarshal([]byte(courseListJson), &courseJsonList)
 		if err != nil {
-			log.Println(err.Error())
+			log.Println("[GetCourseListByStudentId] courseJsonList:", err.Error())
 			code = vo.UnknownError
 			return
 		}
@@ -152,7 +152,7 @@ func (crr CourseRedisRepository) GetCourseListByStudentId(stuId int64, courseLis
 			course := model.Course{}
 			err := json.Unmarshal([]byte(courseJson), &course)
 			if err != nil {
-				log.Println(err.Error())
+				log.Println("[GetCourseListByStudentId] course:", err.Error())
 				code = vo.UnknownError
 				return
 			}

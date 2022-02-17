@@ -61,18 +61,13 @@ func (ctl CourseBookingController) BookCourse(c *gin.Context) {
 		code = vo.ParamInvalid
 		return
 	}
+	if code = vo.ValidateBookCourseReq(req); code != vo.OK {
+		return
+	}
 
-	// validate data
-	studentId, err := strconv.ParseInt(req.StudentID, 10, 64)
-	if err != nil {
-		code = vo.ParamInvalid
-		return
-	}
-	courseId, err := strconv.ParseInt(req.CourseID, 10, 64)
-	if err != nil {
-		code = vo.ParamInvalid
-		return
-	}
+	studentId, _ := strconv.ParseInt(req.StudentID, 10, 64)
+
+	courseId, _ := strconv.ParseInt(req.CourseID, 10, 64)
 
 	// =============================================================
 	// book course (v2: cache "course", "sc" and "student" to Redis)
@@ -127,9 +122,9 @@ func (ctl CourseBookingController) BookCourse(c *gin.Context) {
 		`)
 	codeInt, err := lua.Run(ctl.ctx, ctl.RDB, keys, values...).Int()
 	if err != nil {
-		log.Println(err.Error())
+		log.Println("[BookCourse.lua]", err.Error())
 	}
-	fmt.Println(codeInt)
+	fmt.Println("[BookCourse.lua] lua return code:", codeInt)
 	code = vo.ErrNo(codeInt)
 
 	// 5. write new data to MySQL
@@ -140,11 +135,11 @@ func (ctl CourseBookingController) BookCourse(c *gin.Context) {
 		}
 		val, err := json.Marshal(sc)
 		if err != nil {
-			log.Println(err.Error())
+			log.Println("[BookCourse] marshal sc: ", err.Error())
 		}
 		err = ctl.RDB.RPush(ctl.ctx, "MessageQueue", val).Err()
 		if err != nil {
-			log.Println(err.Error())
+			log.Println("[BookCourse.mq]", err.Error())
 		}
 	}
 	//if code == vo.OK {
@@ -216,7 +211,7 @@ func (ctl CourseBookingController) GetStudentCourse(c *gin.Context) {
 			}{tCourseList},
 		}
 		c.JSON(http.StatusOK, resp)
-		utils.LogReqRespBody(req, resp, "BookCourse")
+		utils.LogReqRespBody(req, resp, "GetStudentCourse")
 	}()
 
 	// validate data
@@ -224,11 +219,11 @@ func (ctl CourseBookingController) GetStudentCourse(c *gin.Context) {
 		code = vo.ParamInvalid
 		return
 	}
-	studentId, err := strconv.ParseInt(req.StudentID, 10, 64)
-	if err != nil {
-		code = vo.ParamInvalid
+	if code = vo.ValidateGetStudentCourseReq(req); code != vo.OK {
 		return
 	}
+
+	studentId, _ := strconv.ParseInt(req.StudentID, 10, 64)
 
 	// get course
 	code = ctl.courseRedisRepo.GetCourseListByStudentId(studentId, &courseList)

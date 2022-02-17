@@ -69,10 +69,10 @@ func (ctl UserController) Create(c *gin.Context) {
 	//获取session
 	session, err := Store.Get(c.Request, "camp-session")
 	if session.IsNew || err != nil {
-		code = vo.OK
+		code = vo.LoginRequired
 		log.Println("[CreateMember] : no session, 出错了，这里查不到session")
 		log.Println(err)
-		//return
+		return
 	} else {
 		cookie := session.Values["UserType"].(string)
 		uuidT, err := strconv.ParseInt(cookie, 10, 64)
