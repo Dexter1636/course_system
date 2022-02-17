@@ -143,7 +143,7 @@ func InitRedisData() {
 		panic(err.Error())
 	}
 	for _, sc := range scs {
-		err := RDB.SAdd(Ctx, fmt.Sprintf("sc:%d", sc.StudentId), sc.CourseId, 0).Err()
+		err := RDB.SAdd(Ctx, fmt.Sprintf("sc:%d", sc.StudentId), sc.CourseId).Err()
 		if err != nil {
 			panic(err.Error())
 		}
