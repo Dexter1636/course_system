@@ -29,7 +29,8 @@ func (cr CourseRepository) GetCourseById(id int64, course *model.Course) (code v
 			log.Println("repository.GetCourseById: CourseNotExisted")
 			return vo.CourseNotExisted
 		} else {
-			panic(err.Error())
+			log.Println("[GetCourseById]", err.Error())
+			return vo.UnknownError
 		}
 	}
 	return vo.OK
@@ -78,7 +79,8 @@ func (cr CourseRepository) GetCourseListByStudentId(stuId int64, courseList *[]m
 
 func (cr CourseRepository) CreateCourse(course *model.Course) (code vo.ErrNo) {
 	if err := cr.DB.Omit("Id", "TeacherId").Create(&course).Error; err != nil {
-		panic(err.Error())
+		log.Println("[CreateCourse]", err.Error())
+		return vo.UnknownError
 	}
 	return vo.OK
 }
