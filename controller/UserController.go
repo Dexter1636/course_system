@@ -90,8 +90,8 @@ func (ctl UserController) Create(c *gin.Context) {
 		//panic(err.Error())
 		return
 	} else {
-		var user model.User
-		if err := json.Unmarshal([]byte(val), &user); err != nil {
+		var userTmp model.UserTmp
+		if err := json.Unmarshal([]byte(val), &userTmp); err != nil {
 			//JSON解析错误
 			code = vo.UnknownError
 			log.Println("CreateMember:json-error while login check")
@@ -103,7 +103,7 @@ func (ctl UserController) Create(c *gin.Context) {
 			log.Println("CreateMember:UserHasDeleted")
 			return
 		}
-		if user.RoleId != "1" {
+		if userTmp.RoleId != 1 {
 			code = vo.PermDenied
 			log.Println("CreateMember:PermDenied cause user not admin")
 			return
