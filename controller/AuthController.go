@@ -158,6 +158,7 @@ func (ctl AuthController) Logout(c *gin.Context) {
 	session, err := Store.Get(c.Request, "camp-session")
 	if session.IsNew || err != nil {
 		code = vo.LoginRequired
+		log.Println(err)
 		log.Println("[logout]: session wrong")
 		return
 	}
@@ -221,6 +222,7 @@ func (ctl AuthController) WhoAmI(c *gin.Context) {
 	session, err := Store.Get(c.Request, "camp-session")
 	if session.IsNew || err != nil {
 		code = vo.LoginRequired
+		log.Println(err)
 		log.Println("[WhoAmI] : no session, ")
 		return
 	}

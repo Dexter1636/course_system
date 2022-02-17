@@ -71,6 +71,7 @@ func (ctl UserController) Create(c *gin.Context) {
 	if session.IsNew || err != nil {
 		code = vo.LoginRequired
 		log.Println("[WhoAmI] : no session, ")
+		log.Println(err)
 		return
 	}
 	cookie := session.Values["UserID"].(string)
