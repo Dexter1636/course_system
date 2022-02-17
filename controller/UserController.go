@@ -52,7 +52,7 @@ func (ctl UserController) Create(c *gin.Context) {
 
 	if err := c.ShouldBindJSON(&req); err != nil {
 		code = vo.UnknownError
-		panic(err.Error())
+		//panic(err.Error())
 		log.Println("CreateMember:ShouldBindJSON error")
 		return
 	}
@@ -86,7 +86,7 @@ func (ctl UserController) Create(c *gin.Context) {
 		//Redis错误
 		code = vo.UnknownError
 		log.Println("CreateMember:redis-error while login check")
-		panic(err.Error())
+		//panic(err.Error())
 		return
 	} else {
 		var user model.User
@@ -94,7 +94,7 @@ func (ctl UserController) Create(c *gin.Context) {
 			//JSON解析错误
 			code = vo.UnknownError
 			log.Println("CreateMember:json-error while login check")
-			panic(err.Error())
+			//panic(err.Error())
 			return
 		}
 		if user.Enabled == 0 {
@@ -155,14 +155,14 @@ func (ctl UserController) Create(c *gin.Context) {
 				//JSON解析错误
 				code = vo.UnknownError
 				log.Println("CreateMember:JSON-error while creating")
-				panic(err.Error())
+				//panic(err.Error())
 				return
 			}
 			//存入redis
 			err = ctl.RDB.Set(ctl.Ctx, fmt.Sprintf("user:%d", user.Uuid), val, 0).Err()
 			if err != nil {
 				code = vo.UnknownError
-				panic(err.Error())
+				//panic(err.Error())
 				log.Println("CreateMember:redis-error while creating")
 				return
 			}
@@ -170,7 +170,7 @@ func (ctl UserController) Create(c *gin.Context) {
 			return
 		} else {
 			code = vo.UnknownError
-			panic(err.Error())
+			//panic(err.Error())
 			log.Println("CreateMember:Unknown-error while creating")
 			return
 		}
@@ -212,13 +212,13 @@ func (ctl UserController) Member(c *gin.Context) {
 		//Redis错误
 		code = vo.UnknownError
 		log.Println("Member:redis-error")
-		panic(err.Error())
+		//panic(err.Error())
 		return
 	} else {
 		if err := json.Unmarshal([]byte(val), &user); err != nil {
 			//JSON解析错误
 			code = vo.UnknownError
-			panic(err.Error())
+			//panic(err.Error())
 			log.Println("Member:JSON-error")
 			return
 		}

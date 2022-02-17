@@ -249,14 +249,14 @@ func (ctl AuthController) WhoAmI(c *gin.Context) {
 		code = vo.UnknownError
 		log.Println("[WhoAmI]: Redis Error")
 		log.Println(err) //打印err
-		panic(err.Error())
+		//panic(err.Error())
 		return
 	} else {
 		if err := json.Unmarshal([]byte(val), &user); err != nil {
 			//JSON解析错误
 			code = vo.UnknownError
 			log.Println("[WhoAmI]: JSON error")
-			panic(err.Error())
+			//panic(err.Error())
 			return
 		}
 
