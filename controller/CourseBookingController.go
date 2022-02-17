@@ -70,15 +70,12 @@ func (ctl CourseBookingController) BookCourse(c *gin.Context) {
 	courseId, _ := strconv.ParseInt(req.CourseID, 10, 64)
 
 	// =============================================================
-	// book course (v2: cache "course", "sc" and "student" to Redis)
+	// book course (v3: cache "course", "sc" and "student" to Redis, and use MQ to write to MySQL asynchronously)
 	// 1. validate student
 	// 2. validate course
 	// 3. validate sc
 	// 4. update course avail - 1
-	// 5. write new data to MySQL
-	//    - if failed:
-	//   	1. delete sc
-	//  	2. update course avail + 1
+	// 5. write new data to MQ
 	// =============================================================
 
 	// 1. validate student
@@ -127,7 +124,7 @@ func (ctl CourseBookingController) BookCourse(c *gin.Context) {
 	fmt.Println("[BookCourse.lua] lua return code:", codeInt)
 	code = vo.ErrNo(codeInt)
 
-	// 5. write new data to MySQL
+	// 5. write new data to MQ
 	if code == vo.OK {
 		sc := model.Sc{
 			StudentId: studentId,
