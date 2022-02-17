@@ -3,6 +3,7 @@ package controller
 import (
 	"context"
 	"course_system/common"
+	"course_system/dto"
 	"course_system/model"
 	"course_system/repository"
 	"course_system/utils"
@@ -227,10 +228,6 @@ func (ctl CourseBookingController) GetStudentCourse(c *gin.Context) {
 
 	// convert query result to response type
 	for _, course := range courseList {
-		tCourseList = append(tCourseList, vo.TCourse{
-			CourseID:  strconv.FormatInt(course.Id, 10),
-			Name:      course.Name,
-			TeacherID: strconv.FormatInt(course.TeacherId, 10),
-		})
+		tCourseList = append(tCourseList, dto.ToTCourse(course))
 	}
 }
