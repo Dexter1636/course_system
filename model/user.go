@@ -12,3 +12,12 @@ type User struct {
 func (User) TableName() string {
 	return "user"
 }
+
+type UserTmp struct {
+	Uuid     int64  `gorm:"primaryKey; autoIncrement"`
+	UserName string `gorm:"varchar(20)"`
+	NickName string `gorm:"varchar(20)"`
+	Password string `gorm:"varchar(20)"`
+	RoleId   string
+	Enabled  int8
+}
