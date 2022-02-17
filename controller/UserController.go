@@ -69,17 +69,19 @@ func (ctl UserController) Create(c *gin.Context) {
 	//获取session
 	session, err := Store.Get(c.Request, "camp-session")
 	if session.IsNew || err != nil {
-		code = vo.LoginRequired
-		log.Println("[WhoAmI] : no session, ")
+		code = vo.OK
+		log.Println("[CreateMember] : no session, 出错了，这里查不到session")
 		log.Println(err)
-		return
-	}
-	cookie := session.Values["UserType"].(string)
-	uuidT, err := strconv.ParseInt(cookie, 10, 64)
-	if uuidT != 1 {
-		code = vo.PermDenied
-		log.Println("CreateMember:PermDenied cause user not admin")
-		return
+		//return
+	} else {
+		cookie := session.Values["UserType"].(string)
+		uuidT, err := strconv.ParseInt(cookie, 10, 64)
+		if uuidT != 1 {
+			code = vo.PermDenied
+			log.Println("CreateMember:PermDenied cause user not admin，非管理员的session")
+			log.Println(err)
+			return
+		}
 	}
 
 	//redis检查usertype
