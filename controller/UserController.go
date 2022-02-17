@@ -95,6 +95,7 @@ func (ctl UserController) Create(c *gin.Context) {
 			//JSON解析错误
 			code = vo.UnknownError
 			log.Println("CreateMember:json-error while login check")
+			log.Println(err)
 			//panic(err.Error())
 			return
 		}
@@ -103,7 +104,7 @@ func (ctl UserController) Create(c *gin.Context) {
 			log.Println("CreateMember:UserHasDeleted")
 			return
 		}
-		if userTmp.RoleId != 1 {
+		if userTmp.RoleId != "1" {
 			code = vo.PermDenied
 			log.Println("CreateMember:PermDenied cause user not admin")
 			return

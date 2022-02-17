@@ -18,6 +18,6 @@ type UserTmp struct {
 	UserName string `gorm:"varchar(20)"`
 	NickName string `gorm:"varchar(20)"`
 	Password string `gorm:"varchar(20)"`
-	RoleId   int
+	RoleId   string
 	Enabled  int8
 }
