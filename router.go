@@ -2,25 +2,14 @@ package main
 
 import (
 	"course_system/controller"
-	"course_system/vo"
+	"course_system/middleware"
 	"github.com/gin-gonic/gin"
-	"log"
-	"net/http"
 )
 
 func RegisterRouter() *gin.Engine {
 	r := gin.Default()
 
-	// Recovery middleware recovers from any panics and writes a 500 if there was one.
-	r.Use(gin.CustomRecovery(func(c *gin.Context, recovered interface{}) {
-		if err, ok := recovered.(string); ok {
-			c.JSON(http.StatusInternalServerError, vo.ResponseMeta{Code: vo.UnknownError})
-			log.Println("========================================")
-			log.Printf("!!PANIC!! ERR: %s\n", err)
-			log.Println("========================================")
-		}
-		c.AbortWithStatus(http.StatusInternalServerError)
-	}))
+	r.Use(middleware.Recovery())
 
 	g := r.Group("/api/v1")
 
